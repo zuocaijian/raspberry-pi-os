@@ -1,23 +1,23 @@
-## 1.1: RPi 操作系统介绍， 以及裸板程序 "Hello, world!"
+## 1.1: Introducing RPi OS, or bare-metal "Hello, World!"
 
-通过写一个小的，纯裸板的 "Hello, World" 应用来开启一场属于我们的操作系统开发之旅。我假定你已经阅读了 [提前声明](../Prerequisites.md) 并且已经按照要求做好了所有的准备。如果没有，请现在开始准备。
+We are going to start our journey in OS development by writing a small, bare-metal "Hello, World" application. I assume that  you have gone through the [Prerequisites](../Prerequisites.md) and have everything ready. If not, now is the time to do this.
 
-在下一步开始之前，我想先建立一个简单的命名约定。在README文件中你可以看到整个教程的划分。 每一节课都由一些我称之为 "章" 的文件组成(现在, 你正在阅读第 一 节课, 第 1.1 章)。 每一章又被分为许多 "节" 。 这种命名约定可以让我引用资料的不同部分。
+Before we move forward, I want to establish a simple naming convention. From the README file you can see that the whole tutorial is divided into lessons. Each lesson consists of individual files that I call "chapters" (right now, you are reading lesson 1, chapter 1.1). A chapter is further divided into "sections" with headings. This naming convention allows me to make references to different parts of the material.
 
-另一个你需要注意的事情就是这个教程包含了大量的源代码实例。 通常我会以一个完整的代码块作为课程的开始，然后去逐行解释它。 
+Another thing I want you to pay attention to is that the tutorial contains a lot of source code samples. I'll usually start the explanation by providing the complete code block, and then describe it line by line. 
 
-### 项目结构
+### Project structure
 
-每一节课的源代码结构相同。你可以在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01) 找到本节课程的源代码。 让我们来简单描述一下这个文件夹的主要组成部分：
-1. **Makefile** 我们将使用 [make](http://www.math.tau.ac.il/~danha/courses/software1/make-intro.html) 工具来构建这个内核。通过配置Makefile文件来控制 `make` 的行为，Makefile包含了如何编译和链接源代码的指令。 
-1. **build.sh or build.bat** 如果你使用了Docker那么你就需要这些文件。 如果是这样，你就不需要用到安装在你电脑上的 make 工具和编译工具链了。
-1. **src** 这个文件夹包含了所有的源代码。
-1. **include** 所有的头文件都凡在这个文件夹中。 
+The source code of each lesson has the same structure. You can find this lesson's source code [here](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01). Let's briefly describe the main components of this folder:
+1. **Makefile** We will use the [make](http://www.math.tau.ac.il/~danha/courses/software1/make-intro.html) utility to build the kernel. `make`'s behavior is configured by a Makefile, which contains instructions on how to compile and link the source code. 
+1. **build.sh or build.bat** You'll need these files if you want to build the kernel using Docker. You won't need to have the make utility or the compiler toolchain installed on your laptop.
+1. **src** This folder contains all of the source code.
+1. **include** All of the header files are placed here. 
 
 ### Makefile
 
-现在让我们来仔细看一下这个工程的 Makefile。 make 工具的最简单的用途是用来自动决定哪些程序片段需要重新编译，并且发出指令去编译他们。如果你不熟悉 make 和Makefile，我推荐你去阅读 [这篇](http://opensourceforu.com/2012/06/gnu-make-in-detail-for-beginners/) 文章。 
-在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile) 可以找到Makefile在第一节课中的使用。全部内容如下所示：
+Now let's take a closer look at the project Makefile. The primary purpose of the make utility is to automatically determine what pieces of a program need to be recompiled, and to issue commands to recompile them. If you are not familiar with make and Makefiles, I recommend that you read [this](http://opensourceforu.com/2012/06/gnu-make-in-detail-for-beginners/) article. 
+The Makefile used in the first lesson can be found [here](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile). The whole Makefile is listed below:
 ```
 ARMGNU ?= aarch64-linux-gnu
 
@@ -51,32 +51,32 @@ kernel7.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
     $(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel7.elf  $(OBJ_FILES)
     $(ARMGNU)-objcopy $(BUILD_DIR)/kernel7.elf -O binary kernel7.img
 ``` 
-现在，让我们来详细检查一下这个文件：
+Now, let's inspect this file in detail:
 ```
 ARMGNU ?= aarch64-linux-gnu
 ```
-这个Makefile以一个变量的定义开始。 `ARMGNU` 是一个交叉编译器前缀。我们需要一个 [交叉编译器](https://en.wikipedia.org/wiki/Cross_compiler)，因为我们正在一台 `x86` 电脑上编译运行在 `arm64` 架构机器上的源代码。 所以我们不是用 `gcc`，而是使用 `aarch64-linux-gnu-gcc`。 
+The Makefile starts with a variable definition. `ARMGNU` is a cross-compiler prefix. We need to use a [cross-compiler](https://en.wikipedia.org/wiki/Cross_compiler) because we are compiling the source code for the `arm64` architecture on an `x86` machine. So instead of `gcc`, we will use `aarch64-linux-gnu-gcc`. 
 
 ```
 COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
 ASMOPS = -Iinclude 
 ```
 
-`COPS` 和 `ASMOPS` 分别是当编译C和汇编代码时我们传递给编译器的可选项。 对这些可选项的简短解释如下：
+`COPS` and `ASMOPS` are options that we pass to the compiler when compiling C and assembler code, respectively. These options require a short explanation:
 
-* **-Wall** 显示所有的警告。
-* **-nostdlib** 不使用标准C库。大部分标准C库的调用其实是在与操作系统的交互。 我们正在写一个裸板程序，没有任何底层操作系统，所以标准C库对我们来说是不可用的。
-* **-nostartfiles** 不使用标准启动文件。 启动文件负责初设置初始栈指针，初始化静态数据，并且跳转到主函数入口处。这些所有的工作将由我们自己来完成。
-* **-ffreestanding** 独立环境是这样的一种环境：标准C库可能不存在，程序也不一定非得是由main函数来启动。 `-ffreestanding` 这个可选项指示编译器不要假定标准函数具有他们通常的定义。
-* **-Iinclude** 指示编译器在 `include` 文件夹下查找头文件。
-* **-mgeneral-regs-only**. 只是用通用寄存器。 ARM 同时还有 [NEON](https://developer.arm.com/technologies/neon) 寄存器。 我们不想让编译器使用 NEON 寄存器，因为这些寄存器将会增加额外的复杂度 (比如，我们在切换上下文的时候需要保存这些寄存器的状态)。
+* **-Wall** Show all warnings.
+* **-nostdlib** Don't use the C standard library. Most of the calls in the C standard library eventually interact with the operating system. We are writing a bare-metal program, and we don't have any underlying operating system, so the C standard library is not going to work for us anyway.
+* **-nostartfiles** Don't use standard startup files. Startup files are responsible for setting an initial stack pointer, initializing static data, and jumping to the main entry point. We are going to do all of this by ourselves.
+* **-ffreestanding** A freestanding environment is an environment in which the standard library may not exist, and program startup may not necessarily be at main. The option `-ffreestanding` directs the compiler to not assume that standard functions have their usual definition.
+* **-Iinclude** Search for header files in the `include` folder.
+* **-mgeneral-regs-only**. Use only general-purpose registers. ARM processors also have [NEON](https://developer.arm.com/technologies/neon) registers. We don't want the compiler to use them because they add additional complexity (since, for example, we will need to store the registers during a context switch).
 
 ```
 BUILD_DIR = build
 SRC_DIR = src
 ```
 
-`SRC_DIR` 和 `BUILD_DIR` 分别是包含源代码和编译后目标(或中间)文件的目录。
+`SRC_DIR` and `BUILD_DIR` are directories that contain source code and compiled object files, respectively.
 
 ```
 all : kernel7.img
@@ -85,7 +85,8 @@ clean :
     rm -rf $(BUILD_DIR) *.img 
 ```
 
-接卸来，我们定义 make 的目标(任务)。前两个目标非常简单： `all` 是一个默认的目标，当你键入 `make` 命令并且不带任何参数时，这个目标将被执行。 (`make` 命令总是把第一个目标当成是默认目标)。这个目标只是将所有的工作分别重定向到不同的目标，`kernel7.img`。 `clean` 这个目标负责删除所有编译后的目标(或中间)文件和内核镜像文件。
+Next, we define make targets. The first two targets are pretty simple: the `all` target is the default one, and it is executed whenever you type `make` without any arguments (`make` always uses the first target as the default). This target just redirects all work to a different target, `kernel7.img`.
+The `clean` target is responsible for deleting all compilation artifacts and the compiled kernel image.
 
 ```
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
@@ -96,7 +97,7 @@ $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
     $(ARMGNU)-gcc $(ASMOPS) -MMD -c $< -o $@
 ```
 
-紧接着的两个目标负责编译C和汇编文件。 例如，假设在 `src` 目录下我们有 `foo.c` 和 `foo.S` 两个文件，这两个目标分别将他们编译成 `build/foo_c.o` 和 `build/foo_s.o`。 `$<` 和 `$@` 将在运行时被替换成输入和输出文件名 (`foo.c` 和 `foo_c.o`)。 在编译 C 文件之前，我们还将创建 `build` 目录以防这个目录不存在。
+The next two targets are responsible for compiling C and assembler files. If, for example, in the `src` directory we have `foo.c` and `foo.S` files, they will be compiled into `build/foo_c.o` and `build/foo_s.o`, respectively. `$<` and `$@` are substituted at runtime with the input and output filenames (`foo.c` and `foo_c.o`). Before compiling C files, we also create a `build` directory in case it doesn't exist yet.
 
 ```
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
@@ -105,14 +106,14 @@ OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
 OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
 ```
 
-此处我们将构建一系列由C和汇编等相关源文件所生成的目标文件 (`OBJ_FILES`)。
+Here we are building an array of all object files (`OBJ_FILES`) created from the concatenation of both C and assembler source files.
 
 ```
 DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)
 ```
 
-接下来的两行代码有点棘手。 If you take a look at how we defined our compilation targets for both C and assembler source files, you will notice that we used the `-MMD` parameter. This parameter instructs the `gcc` compiler to create a dependency file for each generated object file. A dependency file defines all of the dependencies for a particular source file. These dependencies usually contain a list of all included headers. We need to include all of the generated dependency files so that make knows what exactly to recompile in case a header changes. 
+The next two lines are a little bit tricky. If you take a look at how we defined our compilation targets for both C and assembler source files, you will notice that we used the `-MMD` parameter. This parameter instructs the `gcc` compiler to create a dependency file for each generated object file. A dependency file defines all of the dependencies for a particular source file. These dependencies usually contain a list of all included headers. We need to include all of the generated dependency files so that make knows what exactly to recompile in case a header changes. 
 
 ```
 $(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o kernel7.elf  $(OBJ_FILES)

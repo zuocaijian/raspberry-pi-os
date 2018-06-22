@@ -30,35 +30,35 @@
     * 1.3 [内核构建系统](docs/lesson01/linux/build-system.md) 
     * 1.4 [开机流程](docs/lesson01/linux/kernel-startup.md)
   * 1.5 [练习](docs/lesson01/exercises.md)
-* **Lesson 2: 进程初始化**
+* **第 二 节课: 进程初始化**
   * 2.1 [RPi 操作系统](docs/lesson02/rpi-os.md)
   * 2.2 [Linux](docs/lesson02/linux.md)
   * 2.3 [练习](docs/lesson02/exercises.md)
-* **Lesson 3: 中断处理**
+* **第 三 节课: 中断处理**
   * 3.1 [RPi 操作系统](docs/lesson03/rpi-os.md)
   * Linux
     * 3.2 [低级异常处理](docs/lesson03/linux/low_level-exception_handling.md) 
     * 3.3 [中断控制器](docs/lesson03/linux/interrupt_controllers.md)
     * 3.4 [时钟](docs/lesson03/linux/timer.md)
   * 3.5 [练习](docs/lesson03/exercises.md)
-* **Lesson 4: 进程调度器**
+* **第 四 节课: 进程调度器**
   * 4.1 [RPi 操作系统](docs/lesson04/rpi-os.md) 
   * Linux
     * 4.2 [任务调度器基本结构](docs/lesson04/linux/basic_structures.md)
     * 4.3 [拷贝一个任务](docs/lesson04/linux/fork.md)
     * 4.4 [任务调度器](docs/lesson04/linux/scheduler.md)
   * 4.5 [练习](docs/lesson04/exercises.md)
-* **Lesson 5: 用户进程和系统调用** 
+* **第 五 节课: 用户进程和系统调用** 
   * 5.1 [RPi 操作系统](docs/lesson05/rpi-os.md) 
   * 5.2 [Linux](docs/lesson05/linux.md)
   * 5.3 [练习](docs/lesson05/exercises.md)
-* **Lesson 6: 虚拟内存管理**
+* **第 六 节课: 虚拟内存管理**
   * 6.1 [RPi 操作系统](docs/lesson06/rpi-os.md) 
   * 6.2 Linux (进行中)
   * 6.3 [练习](docs/lesson06/exercises.md)
-* **Lesson 7: 信号和中断/等待** (待完成)
-* **Lesson 8: 文件系统** (待完成)
-* **Lesson 9: 可执行文件 (ELF)** (待完成)
-* **Lesson 10: 驱动** (待完成)
-* **Lesson 11: 网络** (待完成)
+* **第 七 节课: 信号和中断/等待** (待完成)
+* **第 八 节课: 文件系统** (待完成)
+* **第 九 节课: 可执行文件 (ELF)** (待完成)
+* **第 十 节课: 驱动** (待完成)
+* **第 十一 节课: 网络** (待完成)
 
