@@ -1,32 +1,32 @@
-## Contributing to the Raspberry PI OS
+## 向 树莓派 操作系统贡献
 
-The general workflow is the following:
+大致的流程如下：
 
-1. Find an [issue](https://github.com/s-matyukevich/raspberry-pi-os/issues) you want to start working on or create a new one.
-1. In comments claim that you want to take over the issue. The first person who does this will be assigned to the issue.
-1. [Fork the repository](https://help.github.com/articles/fork-a-repo/).
-1. Make all necessary changes.
-1. [Send a pull request](https://help.github.com/articles/about-pull-requests/). 
-1. After a review, your changes will be merged.
+1. 找到一个你想解决的 [问题](https://github.com/s-matyukevich/raspberry-pi-os/issues) 或者新建一个问题。
+1. 在评区申明你想领取该问题。问题将分配给第一个申明想要领取的人。
+1. [Fork 本项目](https://help.github.com/articles/fork-a-repo/)。
+1. 修改、解决问题。
+1. [发起一个合并请求](https://help.github.com/articles/about-pull-requests/)。 
+1. 经过审查，你的修改将会被合并。
 
-The following types of contributions are particularly useful for the project.
+对本项目特别有用的贡献类型如下。
 
-1. Validating the source code and text of the lessons, fixing bugs and errors.
-1. Help in making lessons content more accurate and easier to understand.
-1. Working on the source code and content for new lessons.
-1. Sharing source code of completed exercises.
-1. Suggesting new exercises.
-1. Providing feedback, requesting new features and content.
-1. Anything else that can help the project.
+1. 验证课程的源代码和资料，bug及错误的修复。
+1. 使课程内容更加准确和更加容易理解。
+1. 致力于新课程的内容和源代码。
+1. 分享完成了的课后练习源代码。
+1. 对新练习的建议。
+1. 提供反馈，对新功能、特性和内容的要求。
+1. 其他任何有助于本项目的事情。
 
-### Contributing completed exercises
+### 贡献完成了的练习题。
 
-If you successfully completed any of the exercises you can share your source code. The code should be placed in the following folder `/exercises/lessonXX/<exercise number>/<your github username>/` Such folder structure allows to accept pull requests for the same exercise from different people.
+你可以分享任何你成功完成的练习题. 请将源代码放在 `/exercises/lessonXX/<exercise number>/<your github username>/` 目录下。这种目录结构可以接受来自不同的人对同一个练习题的代码合并请求.
 
-##### Previous Page
+##### 上一页
 
-[Introduction](../docs/Introduction.md)
+[引言](../docs/Introduction.md)
 
-##### Next Page
+##### 下一页
 
-[Prerequisites](../docs/Prerequisites.md)
+[提前声明](../docs/Prerequisites.md)

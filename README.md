@@ -4,7 +4,7 @@
 
 每一节课程教学都遵循如下设计：首先解释 RPi 操作系统实现了哪些内核特性和功能，接着演示该功能在 Linux 内核中是如何工作的。在源代码 [src](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src) 目录下有对应的每节课的文件夹, 里面包含了本次课程结束时 RPi 操作系统的一份源代码快照. 这样可以保证由浅入深逐步引入新的专业概念，并且有助于帮助读者清晰的看到 RPi 操作系统是如何演进的. 学习这份教学指南不需要额外掌握任何特别的开发技巧。
 
-关于本项目更多的目的和历史信息, 请参阅 [Introduction](docs/Introduction.md). 目前本项目仍处于开发状态, 如果你有兴趣参与 - 请参阅 [Contribution guide](docs/Contributions.md).
+关于本项目更多的目的和历史信息, 请参阅 [Introduction](docs/Introduction.md). 目前本项目仍处于开发状态, 如果你有兴趣参与 - 请参阅 [Contribution guide](docs/Contributions.md)。
 
 <a href="https://twitter.com/RPi_OS" target="_blank">
   <img src="https://raw.githubusercontent.com/s-matyukevich/raspberry-pi-os/master/images/twitter.png" alt="Follow @RPi_OS on twitter" height="34" >
