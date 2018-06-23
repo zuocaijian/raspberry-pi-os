@@ -10,7 +10,7 @@
 
 每一节课的源代码结构相同。你可以在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01) 找到本节课程的源代码。 让我们来简单描述一下这个文件夹的主要组成部分：
 1. **Makefile** 我们将使用 [make](http://www.math.tau.ac.il/~danha/courses/software1/make-intro.html) 工具来构建这个内核。通过配置Makefile文件来控制 `make` 的行为，Makefile包含了如何编译和链接源代码的指令。 
-1. **build.sh or build.bat** 如果你使用了Docker那么你就需要这些文件。 如果是这样，你就不需要用到安装在你电脑上的 make 工具和编译工具链了。
+1. **build.sh 和 build.bat** 如果你使用了Docker那么你就需要这些文件。 这样，你就不需要在你笔记本电脑上安装 make 工具和编译工具链了。
 1. **src** 这个文件夹包含了所有的源代码。
 1. **include** 所有的头文件都凡在这个文件夹中。 
 
@@ -85,7 +85,7 @@ clean :
     rm -rf $(BUILD_DIR) *.img 
 ```
 
-接卸来，我们定义 make 的目标(任务)。前两个目标非常简单： `all` 是一个默认的目标，当你键入 `make` 命令并且不带任何参数时，这个目标将被执行。 (`make` 命令总是把第一个目标当成是默认目标)。这个目标只是将所有的工作分别重定向到不同的目标，`kernel7.img`。 `clean` 这个目标负责删除所有编译后的目标(或中间)文件和内核镜像文件。
+接下来，我们定义 make 的目标(任务)。前两个目标非常简单： `all` 是一个默认的目标，当你键入 `make` 命令并且不带任何参数时，这个目标将被执行。 (`make` 命令总是把第一个目标当成是默认目标)。这个目标只是将所有的工作分别重定向到不同的目标，`kernel7.img`。 `clean` 这个目标负责删除所有编译后的目标(或中间)文件和内核镜像文件。
 
 ```
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
@@ -112,23 +112,23 @@ DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)
 ```
 
-接下来的两行代码有点棘手。 If you take a look at how we defined our compilation targets for both C and assembler source files, you will notice that we used the `-MMD` parameter. This parameter instructs the `gcc` compiler to create a dependency file for each generated object file. A dependency file defines all of the dependencies for a particular source file. These dependencies usually contain a list of all included headers. We need to include all of the generated dependency files so that make knows what exactly to recompile in case a header changes. 
+接下来的两行代码有点棘手。如果你仔细看一下我们是如何定义 C 和汇编源文件的编译目标的话，你就会注意到我们使用了 `-MMD` 这个参数。 这个参数指示 `gcc` 编译器为每一个生成的对象文件创建依赖文件。 依赖文件定义了特定源文件的所有依赖项。这些依赖项通常包含一系列的头文件。我们需要把所有生成的依赖文件包含进来，以便于在头文件发生更改的时候知道哪些需要重新编译。 
 
 ```
 $(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o kernel7.elf  $(OBJ_FILES)
 ``` 
 
-We use the `OBJ_FILES` array to build the `kernel7.elf` file. We use the linker script `src/linker.ld` to define the basic layout of the resulting executable image (we will discuss the linker script in the next section).
+我们使用 `OBJ_FILES` 数组来编译 `kernel7.elf` 文件。我们使用 `src/linker.ld` 这个链接脚本来定义生成的可执行镜像文件的基本布局。 (我们将在下一小节讨论这个链接脚本文件)。
 
 ```
 $(ARMGNU)-objcopy kernel7.elf -O binary kernel7.img
 ```
 
-`kernel7.elf` is in the [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) format. The problem is that ELF files are designed to be executed by an operating system. To write a bare-metal program, we need to extract all executable and data sections from the ELF file and put them into the `kernel7.img` image. 
+`kernel7.elf` 是 [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) 格式的(可执行可链接格式)。 可问题是，ELF 文件是被设计成由操作系统执行的文件格式。为了编写一个裸板程序，我们需要从这个 ELF 文件中提取所有的可执行机器代码段和数据段，然后将它们写入 `kernel7.img` 这个镜像中。 
 
-### The linker script
+### 链接脚本
 
-The primary purpose of the linker script is to describe how the sections in the input object files (`_c.o` and `_s.o`) should be mapped into the output file (`.elf`). More information about linker scripts can be found [here](https://sourceware.org/binutils/docs/ld/Scripts.html#Scripts). Now let's take a look at the RPi OS linker script:
+链接脚本的一个主要目的是描述输入文件 (`_c.o` 和 `_s.o`) 到输出文件 (`.elf`)之间的映射关系。 在 [这里](https://sourceware.org/binutils/docs/ld/Scripts.html#Scripts) 可以找到更多关于链接脚本的知识。现在让我们来看一下 RPi 操作系统的链接脚本：
 
 ```
 SECTIONS
@@ -144,13 +144,11 @@ SECTIONS
 }
 ``` 
 
-After startup, the Raspberry Pi loads `kernel7.img` into memory and starts execution from the beginning of the file. That's why the `.text.boot` section must be first; we are going to put the OS startup code inside this section. 
-The `.text`, `.rodata`, and `.data` sections contain kernel-compiled instructions, read-only data, and normal data––there is nothing special to add about them.
-The `.bss` section contains data that should be initialized to 0. By putting such data in a separate section, the compiler can save some space in the ELF binary––only the section size is stored in the ELF header, but the section itself is omitted. After loading the image into memory, we must initialize the `.bss` section to 0; that's why we need to record the start and end of the section (hence the `bss_begin` and `bss_end` symbols) and align the section so that it starts at an address that is a multiple of 8. If the section is not aligned, it would be more difficult to use the `str` instruction to store 0 at the beginning of the `bss` section because the `str` instruction can be used only with 8-byte-aligned addresses.
+开机之后，树莓派会加载 `kernel7.img` 这个镜像文件到内存中，并且从文件开头的地方开始执行。 这就是为什么 `.text.boot` 段(已编译程序的机器代码)必须放在最前面的原因；我们将把操作系统的启动代码放到这个 段 中。 `.text`， `.rodata`， 和 `.data` 这几个段包含了编译好了的内核指令，只读数据，和已初始化的全局和静态变量 - 并没有关于这些概念的特别补充说明(可以参考《深入理解计算机系统》这本书的第 7 章了解更多信息)。 `.bss` 段包含了未初始化的全局和静态变量。 通过将这些数据放在单独的段中这种方式，使得编译器可以在生成 ELF 二进制文件的时候节省一些空间 –– 只在 ELF 头中存储这些段的大小，而不存储这些段本身。在把镜像文件加载到内存中以后，我们必须将 `.bss` 段中的数据初始化为0；这也是为什么我们需要记录每个段的开始和结束位置(从符号 `bss_begin` 到符号 `bss_end` ) ，以及对齐每个段(字节对齐)，这样每个指令的起始地址都是8的倍数。如果不对齐每个段，那么将很难在 `bss` 段的开始处使用 `str` 指令来进行初始化数据，因为 `str` 指令只能用于8字节对齐的地址。
 
-### Booting the kernel
+### 引导内核
 
-Now it is time to take a look at the [boot.S](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/boot.S) file. This file contains the kernel startup code:
+现在是时候来看一下 [boot.S](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/boot.S) 这个文件了。这个文件包含了内核启动代码：
 
 ```
 #include "mm.h"
@@ -176,11 +174,11 @@ master:
     mov    sp, #LOW_MEMORY
     bl    kernel_main
 ```
-Let's review this file in detail:
+让我们来详细的查看一下一个文件：
 ```
 .section ".text.boot"
 ```
-First, we specify that everything defined in `boot.S` should go in the `.text.boot` section. Previously, we saw that this section is placed at the beginning of the kernel image by the linker script. So when the kernel is started, execution begins at the `start` function:
+首先，我们应该知道 `boot.S` 文件中定义的所有内容都应该放在 `.text.boot` 段中。在前面的内容中，我们可以看到这个部分被链接脚本文件放在内核镜像文件的最前面。所以，当内核启动时，从执行 `start` 这个函数开始：
 ```
 .globl _start
 _start:
@@ -190,8 +188,7 @@ _start:
     b    proc_hang
 ```
 
-The first thing this function does is check the processor ID. The Raspberry Pi 3 has four core processors, and after the device is powered on, each core begins to execute the same code. However, we don't want to work with four cores; we want to work only with the first one and put all of the other cores in an endless loop. This is exactly what the `_start` function is responsible for. It gets the processor ID from the [mpidr_el1](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500g/BABHBJCI.html) system register. 
-If the current process ID is 0, then execution is transferred to the `master` function:
+这个函数要做的第一件事就是检查处理器的ID。树莓派3代有4个处理器核心，在设备通电以后，每个处理器核心开始执行相同的代码。然而，我们并不需要4个核心同时工作；我们只需要第一个核心来工作就行了，让其他的核心陷入死循环中。这就是 `_start` 这个函数的责任所在。从 [mpidr_el1](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500g/BABHBJCI.html) 这个系统寄存器我们可以获取到处理器核心的ID。如果当前的处理器核心ID为0，那就切换到 `master` 这个函数的执行处开始执行：
 
 ```
 master:
@@ -201,31 +198,31 @@ master:
     bl     memzero
 ```
 
-Here, we clean the `.bss` section by calling `memzero`. We will define this function later. In ARMv8 architecture, by convention, the first seven arguments are passed to the called function via registers x0–x6. The `memzero` function accepts only two arguments: the start address (`bss_begin`) and the size of the section needed to be cleaned (`bss_end - bss_begin`).
+在这个函数中，我们通过调用 `memzero` 来清除 `.bss` 段。我们将在后面定义这个函数。在 ARMv8 架构中，按照惯例，通过 x0-x6 这几个寄存器来向被调用函数传递前7个参数。 `memzero` 这个函数只接受两个参数：起始地址 (`bss_begin`)以及需要被清除的段的大小(`bss_end - bss_begin`)。
 
 ```
     mov    sp, #LOW_MEMORY
     bl    kernel_main
 ```
 
-After cleaning the `.bss` section, we initialize the stack pointer and pass execution to the `kernel_main` function. The Raspberry Pi loads the kernel at address 0; that's why the initial stack pointer can be set to any location high enough so that stack will not override the kernel image when it grows sufficiently large. `LOW_MEMORY` is defined in [mm.h](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/include/mm.h) and is equal to 4MB. Our kernel's stack won't grow very large and the image itself is tiny, so `4MB` is more than enough for us. 
+在清除 `.bss` 这个段后，我们初始化栈指针跳转到 `kernel_main` 这个函数的执行处开始执行。 树莓派从地址 0 开始加载内核；这就是为什么栈指针可以被设置到任何足够高的位置，这样即使当内存镜像文件变得十分大的时候，栈 区内容也不会被擦除覆写。 `LOW_MEMORY` 被定义在 [mm.h](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/include/mm.h) 这个头文件中，大小等于 4MB。 我们内核的栈区不会变的很大，而且镜像文件本身也很小，所以 `4MB` 对我们来说已经足够大了。 
 
-For those of you who are not familiar with ARM assembler syntax, let me quickly summarize the instructions that we have used:
+对于哪些不熟悉 ARM 汇编器语法的人，让我们来快速总结一下我们使用过的指令：
 
-* [**mrs**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289881374.htm) Load value from a system register to one of the general purpose registers (x0–x30)
-* [**and**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289863017.htm) Perform the logical AND operation. We use this command to strip the last two bytes from the value we obtain from the `mpidr_el1` register.
-* [**cbz**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289867296.htm) Compare the result of the previously executed operation to 0 and jump (or `branch` in ARM terminology) to the provided label if the comparison yields true.
-* [**b**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289863797.htm) Perform an unconditional branch to some label.
-* [**adr**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289862147.htm) Load a label's relative address into the target register. In this case, we want pointers to the start and end of the `.bss` region.
-* [**sub**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289908389.htm) Subtract values from two registers.
-* [**bl**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289865686.htm) "Branch with a link": perform an unconditional branch and store the return address in x30 (the link register). When the subroutine is finished, use the `ret` instruction to jump back to the return address.
-* [**mov**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289878994.htm) Move a value between registers or from a constant to a register.
+* [**mrs**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289881374.htm) 从系统寄存器中取出值加载到一个通用寄存器(x0–x30)
+* [**and**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289863017.htm) 执行逻辑(位) 与 操作。我们使用这个指令来删除我们从 `mpidr_el1` 这个系统寄存器中获取到的值的后两位。
+* [**cbz**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289867296.htm) 将先前执行的操作结果与 0 进行比较，如果结果为真，那就跳转 (或者 ARM 术语中的 `branch` )到指令参数指定的 Label 处。
+* [**b**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289863797.htm) 无条件跳转到标号 Label 处执行。
+* [**adr**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289862147.htm) 将标签的相对地址加载到目标寄存器中。 此处，我们希望将指针指向 `.bss` 区的开始和结束的地方。
+* [**sub**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289908389.htm) 将两个寄存器中的值相减。
+* [**bl**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289865686.htm) "带链接的分支"：无条件执行分支语句，同时将当前的 PC 值保存到 x30 (链接寄存器)。当子程序结束的时候，使用 `ret` 这个指令来返回到跳转指令之后的那个指令处执行。
+* [**mov**](http://www.keil.com/support/man/docs/armasm/armasm_dom1361289878994.htm) 将一个寄存器的值移动到另一个寄存器，或者将一个常量值移动到寄存器。
 
-[Here](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/index.html) is the ARMv8-A developer's guide. It's a good resource if the ARM ISA is unfamiliar to you. [This page](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch09s01s01.html) specifically outlines the register usage convention in the ABI.
+[这里](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/index.html) 是一份 ARMv8-A 开发者指南。 如果你不熟悉 ARM 指令集体系架构，这将是一份很不错的资料。 [这一页](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch09s01s01.html) 明确的概述了在 ABI(应用程序二进制接口)中寄存器的使用约定。
 
-### The `kernel_main` function
+### 关于 `kernel_main` 这个函数
 
-We have seen that the boot code eventually passes control to the `kernel_main` function. Let's take a look at it:
+我们已经看到，引导代码最终将控制权交给了 `kernel_main` 这个函数。让我们来看一下这个函数：
 
 ```
 #include "mini_uart.h"
@@ -242,27 +239,27 @@ void kernel_main(void)
 
 ```
 
-This function is one of the simplest in the kernel. It works with the `Mini UART` device to print to screen and read user input. The kernel just prints `Hello, world!` and then enters an infinite loop that reads characters from the user and sends them back to the screen.
+这是内核中最为简单的函数之一。它使用 `Mini UART` 来向屏幕打印以及读取用户输入。这个内核只是打印 `Hello, world!`，然后就进入一个无限循环当中，读取用户输入的字符并回显在屏幕中。
 
-### Raspberry Pi devices 
+### 关于树莓派这个设备 
 
-Now we are going to dig into something specific to the Raspberry Pi. Before we begin, I recommend that you download the [BCM2835 ARM Peripherals manual](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2835/BCM2835-ARM-Peripherals.pdf). BCM2835 is a board that is used by the Raspberry Pi Models A, B, and B+. The Raspberry Pi 3 uses the BCM2837 board, but its underlying architecture is identical to BCM2835.
+现在我们来深入研究一下树莓派。在开始之前，我推荐你去下载一份 [BCM2835 ARM 外围设备手册](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2835/BCM2835-ARM-Peripherals.pdf). BCM2835 是树莓派 A 型, B 型, 以及 B+ 型号使用的开发板。 树莓派 3 代使用的是 BCM2837，但是其底层架构与 BCM2835 相同。
 
-Before we proceed to the implementation details, I want to share some basic concepts on how to work with memory-mapped devices. BCM2835 is a simple [SOC (System on a chip)](https://en.wikipedia.org/wiki/System_on_a_chip) board. In such a board, access to all devices is performed via memory-mapped registers. The Raspberry Pi 3 reserves the memory above address `0x3F000000` for devices. To activate or configure a particular device, you need to write some data in one of the device's registers. A device register is just a 32-bit region of memory. The meaning of each bit in each device register is described in the `BCM2835 ARM Peripherals` manual.
+在我们开始处理这些实现细节之前，我想分享一些关于如何使用内存映像设备的基本概念。 BCM2835 是一款简单 [SOC (System on a chip (片上系统))](https://en.wikipedia.org/wiki/System_on_a_chip) 开发板. 在这块板子上，可以通过操作内存映射寄存器来访问外围设备。 树莓派 3 代的外围设备内存地址开始于 `0x3F000000`。为了使用或者配置某个特定的外围设备，你需要向其中一个外围设备的寄存器中写入数据。一个外围设备的寄存器就是一块32位的内存区域。 关于每个寄存器中的每个位所代表的含义可以在 `BCM2835 ARM 外围设备手册` 中查到。
 
-From the `kernel_main` function, you can guess that we are going to work with a Mini UART device. UART stands for [Universal asynchronous receiver-transmitter](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter). This device is capable of converting values stored in one of its memory mapped registers to a sequence of high and low voltages. This sequence is passed to your computer via the `TTL-to-serial cable` and is interpreted by your terminal emulator. We are going to use the Mini UART to facilitate communication with our Raspberry Pi. If you want to see the specification of the Mini UART registers, please go to page 8 of the `BCM2835 ARM Peripherals` manual.
+从 `kernel_main` 这个函数中，你能猜到我们准备使用一个 `Mini UART` 外围设备来工作。 UART 是指 [Universal asynchronous receiver-transmitter(通用串口)](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter)。这个设备能够将存储在它的一个内存映射寄存器中的值转换成一个高电平和低电平组成的序列。这个序列通过 `TTL-to-serial cable(串口转接线)` 传递给你的计算机，然后由你的终端模拟器来解析这个序列。我们将使用 `Mini UART` 帮助我们完成与树莓派的交互操作。 如果你想看 Mini UART 寄存器的使用规范，请翻阅 `BCM2835 ARM 外围设备手册` 的第八页。
 
-Another device that you need to familiarize yourself with is the GPIO [General-purpose input/output](https://en.wikipedia.org/wiki/General-purpose_input/output). GPIOs are responsible for controlling `GPIO pins`. You should be able to easily recognize them in the image below:
+另一个你需要熟悉的设备是 GPIO [General-purpose input/output(通用输入输出)](https://en.wikipedia.org/wiki/General-purpose_input/output). GPIOs 由 `GPIO 引脚` 来负责控制。你应该能够从下图中很容易地识别出它们：
 
 ![Raspberry Pi GPIO pins](../../images/gpio-pins.jpg)
 
-The GPIO can be used to configure the behavior of different GPIO pins. For example, to be able to use the Mini UART, we need to activate pins 14 and 15 and set them up to use this device. The image below illustrates how numbers are assigned to the GPIO pins:
+通过不同的 GPIO 引脚可以用来配置 GPIO 的行为。例如，为了能够使用 `Mini UART`，我们需要激活14和15两个引脚，并设置好才能使用这个外围设备。下图说明了 GPIO 引脚的编号：
 
 ![Raspberry Pi GPIO pin numbers](../../images/gpio-numbers.png)
 
-### Mini UART initialization
+### Mini UART 初始化
 
-Now let's take a look at how mini UART is initialized. This code is defined in [mini_uart.c](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/mini_uart.c):
+现在我们来看一下 Mini UART 是如何初始化的。相关代码在 [mini_uart.c](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/mini_uart.c)文件中：
 
 ```
 void uart_init ( void )
@@ -294,19 +291,19 @@ void uart_init ( void )
 }
 ``` 
 
-Here, we use the two functions `put32` and `get32`. Those functions are very simple; they allow us to read and write some data to and from a 32-bit register. You can take a look at how they are implemented in [utils.S](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/utils.S). `uart_init` is one of the most complex and important functions in this lesson, and we will continue to examine it in the next three sections.
+在这里，我们用到了 `put32` 和 `get32` 这两个函数。函数非常简单；它可以让我们往32位寄存器中读写数据。你可以在 [utils.S](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/src/utils.S)这个文件中看一下它们是如何实现的。 `uart_init` 是本节课最复杂也是最重要的函数之一，在接下来的三个小节中我们还将继续研究它。
 
-#### GPIO alternative function selection 
+#### GPIO 可选功能 
 
-First, we need to activate the GPIO pins. Most of the pins can be used with different devices, so before using a particular pin, we need to select the pin's `alternative function`. An `alternative function` is just a number from 0 to 5 that can be set for each pin and configures which device is connected to the pin. You can see the list of all available GPIO alternative functions in the image below (the image is taken from page 102 of `BCM2835 ARM Peripherals` manual):
+首先，我们需要激活 GPIO 引脚。大多数引脚可以使用不同的设备，所以在使用某个特定的引脚之前，我们需要选择这个引脚的 `alternative function`(可选功能)。 `alternative function` 是一个可以为每个引脚设置的从 0 到 5 的数字，用来配置哪个设备连接到该引脚。你可以从下图中看到全部可用的 GPIO 的可选功能列表(图片来自于 `BCM2835 ARM 外围设备手册` 第102页)：
 
 ![Raspberry Pi GPIO alternative functions](../../images/alt.png?raw=true)
 
-Here you can see that pins 14 and 15 have the TXD1 and RXD1 alternative functions available. This means that if we select alternative function number 5 for pins 14 and 15, they will be used as a Mini UART Transmit Data pin and Mini UART Receive Data pin, respectively. The `GPFSEL1` register is used to control alternative functions for pins 10-19. The meaning of all the bits in those registers is shown in the following table (page 92 of `BCM2835 ARM Peripherals` manual):
+其中你可以看到14和15两个引脚分别具有 TXD1(发送数据) 和 RXD1(接受数据) 的可选功能。 这意味这，如果我们使用14和15号引脚的可选功能 5 ，那么它们将分别被用作 Mini UART 发送数据引脚和 Mini UART 接受数据引脚。 `GPFSEL1` 这个寄存器用来控制10-19号引脚的 可选功能 。这些寄存器中全部 位 对应含义如下表所示(`BCM2835 ARM 外围设备操作手册` 第92页)：
 
 ![Raspberry Pi GPIO function selector](../../images/gpfsel1.png?raw=true)
 
-So now you know everything you need to understand the following lines of code that are used to configure GPIO pins 14 and 15 to work with the Mini UART device:
+现在你应该能够理解下面的这几行代码了，它们是用来配置14和15号 GPIO 的引脚以便于使用 Mini UART：
 
 ```
     unsigned int selector;
@@ -319,13 +316,13 @@ So now you know everything you need to understand the following lines of code th
     put32(GPFSEL1,selector);
 ```
 
-#### GPIO pull-up/down 
+#### GPIO 高低电平 
 
-When you work with Raspberry Pi GPIO pins, you will often encounter terms such as pull-up/pull-down. These concepts are explained in great detail in [this](https://grantwinney.com/using-pullup-and-pulldown-resistors-on-the-raspberry-pi/) article. For those who are too lazy to read the whole article, I will briefly explain the pull-up/pull-down concept.
+当你使用树莓派 GPIO 的时候，你会经常碰到高、低电平这样的术语。关于这个概念的详细解析可以看 [这篇](https://grantwinney.com/using-pullup-and-pulldown-resistors-on-the-raspberry-pi/) 文章。 对于哪些懒得看全文的人，我在这里简单解释一下高、低电平这个概念。
 
-If you use a particular pin as input and don't connect anything to this pin, you will not be able to identify whether the value of the pin is 1 or 0. In fact, the device will report random values. The pull-up/pull-down mechanism allows you to overcome this issue. If you set the pin to the pull-up state and nothing is connected to it, it will report `1` all the time (for the pull-down state, the value will always be 0). In our case, we need neither the pull-up nor the pull-down state, because both the 14 and 15 pins are going to be connected all the time. The pin state is preserved even after a reboot, so before using any pin, we always have to initialize its state. There are three available states: pull-up, pull-down, and neither (to remove the current pull-up or pull-down state), and we need the third one.
+如果你使用某个特定引脚作为输入，但该引脚不与任何东西相连，那么你就没办法区分这个引脚的值到底是 0 还是 1。事实上，设备将会是一个随机值。高低电平机制能让你避免这个问题。如果你将引脚设为高电平而不连接任何东西，那么值就会一直为 `1` (对于低电平来说，这个值将总是为 0)。像我们这种情况，我们既不需要高电平也不需要低电平，因为14和15号引脚一直都有连接东西。即使重启，引脚的状态也会保存，所以在我们使用引脚之前，我们总是应该初始化它们的状态。有三种可用的状态：高电平、低电平，以及0电平(移除当前高、低电平状态)，我们需要第三种。
 
-Switching between pin states is not a very simple procedure because it requires physically toggling a switch on the electric circuit. This process involves the `GPPUD` and `GPPUDCLK` registers and is described on page 101 of the `BCM2835 ARM Peripherals` manual. I copied the description here:
+切换引脚状态并不是一个简单的额过程，因为他需要用到电路上的物理开关。这个过程涉及到 `GPPUD` 和 `GPPUDCLK` 两个寄存器，相关描述可参考 `BCM2835 ARM 外围设备手册` 第101页。摘录如下：
 
 ```
 The GPIO Pull-up/down Clock Registers control the actuation of internal pull-downs on
@@ -343,7 +340,7 @@ retain their previous state.
 6. Write to GPPUDCLK0/1 to remove the clock
 ``` 
 
-This procedure describes how we can remove both the pull-up and pull-down states from a pin, which is what we are doing for pins 14 and 15 in the following code:
+这个过程描述了我们如何移除一个引脚的高、低电平状态，也就是我们在下面代码中对14和15号引脚所做的事情：
 
 ```
     put32(GPPUD,0);
@@ -353,9 +350,9 @@ This procedure describes how we can remove both the pull-up and pull-down states
     put32(GPPUDCLK0,0);
 ```
 
-#### Initializing the Mini UART
+#### 初始化 Mini UART
 
-Now our Mini UART is connected to the GPIO pins, and the pins are configured. The rest of the `uart_init` function is dedicated to Mini UART initialization. 
+现在我们的 Mini UART 已经连接上了 GPIO 引脚，引脚也已经配置好了。剩下的 `uart_init` 函数用来决定 Mini UART 的初始化。 
 
 ```
     put32(AUX_ENABLES,1);                   //Enable mini uart (this also enables access to its registers)
@@ -368,50 +365,50 @@ Now our Mini UART is connected to the GPIO pins, and the pins are configured. Th
 
     put32(AUX_MU_CNTL_REG,3);               //Finaly, enable transmitter and receiver
 ```
-Let's examine this code snippet line by line. 
+我们来逐行检查这个代码片段。 
 
 ```
     put32(AUX_ENABLES,1);                   //Enable mini uart (this also enables access to its registers)
 ```
-This line enables the Mini UART. We must do this in the beginning, because this also enables access to all the other Mini UART registers.
+这一行设置 Mini UART 为可用。我们必须在开始出这么做，因为这也同样允许我们访问其它所有的 Mini UART 寄存器。
 
 ```
     put32(AUX_MU_CNTL_REG,0);               //Disable auto flow control and disable receiver and transmitter (for now)
 ```
-Here we disable the receiver and transmitter before the configuration is finished. We also permanently disable auto-flow control because it requires us to use additional GPIO pins, and the TTL-to-serial cable doesn't support it. For more information about auto-flow control, you can refer to [this](http://www.deater.net/weave/vmwprod/hardware/pi-rts/) article.
+此处，在配置完成前，我们先禁用数据发送器和数据接收器。我们还永远的禁用了自动流程控制，因为这需要我们用到额外的 GPIO 引脚，这是TTL-to-serial 转接线所不支持的功能。关于自动流程控制的更多细节，你可以参考 [这篇](http://www.deater.net/weave/vmwprod/hardware/pi-rts/) 文章。
 
 ```
     put32(AUX_MU_IER_REG,0);                //Disable receive and transmit interrupts
 ```
-It is possible to configure the Mini UART to generate a processor interrupt each time new data is available. We are going to start working with interrupts in lesson 3, so for now, we will just disable this feature.
+可以配置 Mini UART 让它每次在有新的数据可用的时候生成一个处理器中断。我们将在第三节课中讲解使用中断，所以现在我们只是简单的禁用这个功能。
 
 ```
     put32(AUX_MU_LCR_REG,3);                //Enable 8 bit mode
 ```
-Mini UART can support either 7- or 8-bit operations. This is because an ASCII character is 7 bits for the standard set and 8 bits for the extended. We are going to use 8-bit mode. Note that the description of the `AUX_MU_LCR_REG` register in the `BCM2835 ARM Peripherals` manual has an error. All such errors are listed [here](https://elinux.org/BCM2835_datasheet_errata)
+Mini UART 能狗支持7位或8位的操作。这是因为ASCII字符标准集是7位，扩展集为8位。我们准备使用8位模式。 请注意，在 `BCM2835 ARM 外围设备手册` 中关于 `AUX_MU_LCR_REG` 这个寄存器的描述有一处错误。全部错误列表在 [这里](https://elinux.org/BCM2835_datasheet_errata)
 
 ```
     put32(AUX_MU_MCR_REG,0);                //Set RTS line to be always high
 ```
-The RTS line is used in the flow control and we don't need it. Set it to be high all the time.
+RTS线用于流控制，我们用不到。把它设为总是高电平。
 ```
     put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
 ```
-The baud rate is the rate at which information is transferred in a communication channel. “115200 baud” means that the serial port is capable of transferring a maximum of 115200 bits per second. The baud rate of your Raspberry Pi mini UART device should be the same as the baud rate in your terminal emulator. 
-The Mini UART calculates baud rate according to the following equation:
+波特率是信息在通信信道中传输的速率。 “115200 baud” 意味着串口每秒最大能传输115200位。 树莓派的 mini UART 的波特率应该与你终端模拟器使用的波特率一致。 
+Mini UART 根据下面这个方程来计算波特率：
 ```
 baudrate = system_clock_freq / (8 * ( baudrate_reg + 1 )) 
 ```
-The `system_clock_freq` is 250 MHz, so we can easily calculate the value of `baudrate_reg` as 270.
+因为 `system_clock_freq` 是 250 MHz，所以我们轻易就能计算出 `baudrate_reg` 的值是270。
 
 ``` 
     put32(AUX_MU_CNTL_REG,3);               //Finaly, enable transmitter and receiver
 ```
-After this line is executed, the Mini UART is ready for work!
+这行代码执行完以后，Mini UART 就已经准备好开始工作了!
 
-### Sending data using the Mini UART
+### 使用 Mini UART 发送数据
 
-After the Mini UART is ready, we can try to use it to send and receive some data. To do this, we can use the following two functions:
+Mini UART 准备好之后，我们可以尝试使用它来发送和接受一些数据。 我们可以使用下面这两个函数来做到这一点：
 
 ```
 void uart_send ( char c )
@@ -433,10 +430,10 @@ char uart_recv ( void )
 }
 ```
 
-Both of the functions start with an infinite loop, the purpose of which is to verify whether the device is ready to transmit or receive data. We are using  the `AUX_MU_LSR_REG` register to do this. Bit zero, if set to 1, indicates that the data is ready; this means that we can read from the UART. Bit five, if set to 1, tells us that the transmitter is empty, meaning that we can write to the UART.
-Next, we use `AUX_MU_IO_REG` to either store the value of the transmitted character or read the value of the received character.
+这两个函数都使用一个无限循环作为开始，其目的是检查设备是否准备发送或者接收数据。我们正在使用 `AUX_MU_LSR_REG` 这个寄存器来完成这个功能。 第 0 为，如果被设置为1，表示数据准备好了；以为着我们可以从 UART 中读取到它。第 5 位，如果设置为1，表示发射器是空的，这意味着我们可以往 UART 写入数据。
+接下来，我们使用 `AUX_MU_IO_REG` 寄存器来传送或者接受字符值。
 
-We also have a very simple function that is capable of sending strings instead of characters:
+我们也可以使用下面这个简单的函数来发送字符串：
 
 ```
 void uart_send_string(char* str)
@@ -446,43 +443,43 @@ void uart_send_string(char* str)
     }
 }
 ```
-This function just iterates over all characters in a string and sends them one by one. 
+这个函数只是重复的对一个字符串进行迭代操作，将它们一个接一个的发送出去。 
 
-### Raspberry Pi config
+### 树莓派配置
 
-The Raspberry Pi startup sequence is the following (simplified):
+树莓派启动流程如下(精简后的)：
 
-1. The device is powered on.
-1. The GPU starts up and reads the `config.txt` file from the boot partition. This file contains some configuration parameters that the GPU uses to further adjust the startup sequence.
-1. `kernel7.img` is loaded into memory and executed.
+1. 设备通电。
+1. 启动GPU，并从引导分区读取 `config.txt` 文件。这个文件包含了一些 GPU 用来进一步调整启动流程的配置参数。
+1. `kernel7.img` 被加载到内存中并且执行。
 
-To be able to run our simple OS, the `config.txt` file should be the following:
+为了能够运行我们的简易操作系统，`config.txt` 这个配置文件应该这样写：
 
 ```
 arm_control=0x200
 kernel_old=1
 disable_commandline_tags=1
 ```
-* `arm_control=0x200` specifies that the processor should be booted in 64-bit mode. 
-* `kernel_old=1` specifies that the kernel image should be loaded at address 0.
-* `disable_commandline_tags` instructs the GPU to not pass any command line arguments to the booted image.
+* `arm_control=0x200` 指定处理器以64位模式启动。 
+* `kernel_old=1` 指定在地址 0 处加载内核镜像。
+* `disable_commandline_tags` 指示 GPU 不传递任何命令行参数给引导镜像。
 
 
-### Testing the kernel
+### 测试这个内核
 
-Now that we have gone through all of the source code, it is time to see it work. To build and test the kernel you need to  do the following:
+现在我们解释完了所有的源代码，是时候来运行一下它了。为了构建和测试内核，你需要做如下操作：
 
-1. Execute `./build.sh` or `./build.bat` from [src/lesson01](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01) in order to build the kernel. 
-1. Copy the generated `kernel7.img` file to the `boot` partition of your Raspberry Pi flash card. Make sure you left all other files in the boot partition untouched (see [this](https://github.com/s-matyukevich/raspberry-pi-os/issues/43) issue for details)
-1. Modify the `config.txt` file as described in the previous section.
-1. Connect the USB-to-TTL serial cable as described in the [Prerequisites](../Prerequisites.md).
-1. Power on your Raspberry Pi.
-1. Open your terminal emulator. You should be able to see the `Hello, world!` message there.
+1. 从 [src/lesson01](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01) 文件目录下执行 `./build.sh` 或者 `./build.bat` 来构建这个内核。 
+1. 拷贝生成好的 `kernel7.img` 文件到你的树莓派SD卡 `boot` 分区中。确保启动分区中其他所有文件都没有动过(更多信息可以看 [这个](https://github.com/s-matyukevich/raspberry-pi-os/issues/43) 问题)
+1. 参考上一小节所描述的内容修改 `config.txt` 这个文件。
+1. 如 [提前声明](../Prerequisites.md) 中所描述的那样连接 TTL 转接线。
+1. 给你的树莓派通电。
+1. 打开你的终端模拟器。你应该能在你的终端模拟器上看到 `Hello, world!` 字样信息。
 
-##### Previous Page
+##### 上一页
 
-[Prerequisites](../../docs/Prerequisites.md)
+[提前申明](../../docs/Prerequisites.md)
 
-##### Next Page
+##### 下一页
 
-1.2 [Kernel Initialization: Linux project structure](../../docs/lesson01/linux/project-structure.md)
+1.2 [内核初始化： Linux 项目结构](../../docs/lesson01/linux/project-structure.md)
