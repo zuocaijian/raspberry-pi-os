@@ -1,12 +1,12 @@
-## 1.2: Linux project structure
+## 1.2: Linux项目结构
 
-This is the first time we are going to talk about Linux. The idea is first to complete some small step in writing our own kernel, and then take a look at how the same things work in Linux. So far we have done very little: we just implemented our first bare metal hello world program, Still, we will be able to find some similarities between the RPi OS and Linux. And now we are going to explore some of them. 
+这是我们第一次正式谈论到Linux。我的想法是首先在我们自己的内核中完成一些小步骤，然后来看看同样的东西在Linux中是如何工作的。尽管到目前为止我们只完成了一点点：那就是我们刚刚实现的第一个裸板程序 hello world，但是，我们还是能够找到 RPi 操作系统和 Linux 操作系统之间的一些相似之处。现在我们就来探究一下这些相似之处。 
 
-### Project structure
+### 项目结构
 
-Whenever you start investigating any large software project, it worth taking a quick look at the project structure. This is very important because it allows you to understand what modules compose the project and what is the high-level architecture. Let's try to explore project structure of the Linux kernel.
+无论何时你准备去研究任何一个大型软件项目，快速浏览一下项目的架构总是非常有用的。这样你可以知道项目是由哪些模块组成，以及项目的上层结构是什么样的，这一点非常重要。所限，让我们先来快速看一眼Linux内核的项目结构。
 
-First of all, you need to clone the Linux repository
+首先，你需要在本地克隆一份Linux的仓库代码
 
 ```
 git clone https://github.com/torvalds/linux.git 
@@ -14,23 +14,23 @@ cd linux
 git checkout v4.14
 ```
 
-We are using `v4.14` version because this was the latest version at the time of writing. All references to the Linux source code will be made using this specific version.
+我们准备使用 `v4.14` 这个版本的Linux源代码，这也是在写这篇教程的时候最新的Linux源代码。对Linux源码的全部引用都是使用的这个特定版本。
 
-Next, let's take a look at the folders that we can find inside the Linux repository. We are not going to look at all of them, but only at those that I consider the most important to start with.
+接下来，让我们来看看Linux仓库中我们都能找到哪些文件夹。我们并不打算把他们全部过一遍，而是只关注我认为在刚开始的时候费用重要的那一部分。
 
-* [arch](https://github.com/torvalds/linux/tree/v4.14/arch) This folder contains subfolders, each for a specific processor architecture. Mostly we are going to work with [arm64](https://github.com/torvalds/linux/tree/v4.14/arch/arm64) - this is the one that is compatible with ARM.v8 processors.
-* [init](https://github.com/torvalds/linux/tree/v4.14/init) Kernel is always booted by architecture specific code. But then execution is passed to the [start_kernel](https://github.com/torvalds/linux/blob/v4.14/init/main.c#L509) function that is responsible for common kernel initialization and is an architecture independent kernel starting point. `start_kernel` function, together with some other initialization functions, is defined in the `init` folder.
-* [kernel](https://github.com/torvalds/linux/tree/v4.14/kernel) This is the core of the Linux kernel. Almost all major kernel subsystems are implemented there.
-* [mm](https://github.com/torvalds/linux/tree/v4.14/mm) All data structures and methods related to memory management are defined there. 
-* [drivers](https://github.com/torvalds/linux/tree/v4.14/drivers) This is the largest folder in the Linux kernel. It contains implementations of all device drivers.
-* [fs](https://github.com/torvalds/linux/tree/v4.14/fs) You can look here to find different filesystem implementations.
+* [arch](https://github.com/torvalds/linux/tree/v4.14/arch) 这个文件夹下面包含了许多子文件夹，每一个子文件夹都对应一个特定体系架构的处理器。大部分时候我们都是。大部分时候我们都是使用 [arm64](https://github.com/torvalds/linux/tree/v4.14/arch/arm64) 这个文件夹 - 他能够兼容 ARM.v8 处理器。
+* [init](https://github.com/torvalds/linux/tree/v4.14/init) 内核总是由特定架构相关的代码来引导启动，不过最后总是执行到 [start_kernel](https://github.com/torvalds/linux/blob/v4.14/init/main.c#L509) 这个函数处，这个函数负责初始化通用内核，并且是与体系结构无关的内核起始点。 `start_kernel` 函数，以及其它的一些初始化函数，都定义在 `init` 这个文件夹下。
+* [kernel](https://github.com/torvalds/linux/tree/v4.14/kernel) 这是 Linux 内核的核心。几乎所有的主要内核子系统都是在这里实现的。
+* [mm](https://github.com/torvalds/linux/tree/v4.14/mm) 与内存管理相关的所有数据结构和方法都定义在这里。 
+* [drivers](https://github.com/torvalds/linux/tree/v4.14/drivers) 这是 Linux 内核中最大的一个文件夹。它包含了全部设备驱动的实现。
+* [fs](https://github.com/torvalds/linux/tree/v4.14/fs) 在这里你可以看到不同文件系统的实现方式。
 
-This explanation is very high-level, but this is enough for now. In the next chapter, we will try to examine Linux build system in some details. 
+以上解读非常浅显，不过对现在的我们来说已经足够了。在下一章，我们将尝试研究一下 Linux 构建系统相关的一些内容。 
 
-##### Previous Page
+##### 上一页
 
-1.1 [Kernel Initialization: Introducing RPi OS, or bare metal "Hello, world!"](../../../docs/lesson01/rpi-os.md)
+1.1 [内核初始化：RPi 操作系统介绍， 以及裸板程序 "Hello, world!"](../../../docs/lesson01/rpi-os.md)
 
 ##### Next Page
 
-1.3 [Kernel Initialization: Kernel build system](../../../docs/lesson01/linux/build-system.md)
+1.3 [内核初始化：内核构建系统](../../../docs/lesson01/linux/build-system.md)

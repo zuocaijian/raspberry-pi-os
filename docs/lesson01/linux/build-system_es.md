@@ -1,38 +1,39 @@
-## 1.3: 内核构建系统。
+## 1.3: Kernel build system.
 
-看完了 Linux 内核项目的组织架构，现在是时候花点时间来研究一下怎么编译和运行了。 Linux 同样也是使用 `make` 工具来构建内核，不过 Linux 的 makefile 要复杂的多。在阅读 Linux 的 makefile 之前，我们先来学习一下关于 Linux 系统构建的一些重要概念，它被称为 "kbuild"。
+After we examined Linux kernel structure, it worth spending some time investigating how we can build and run it. Linux also uses `make` utility to build the kernel, though Linux makefile is much more complicated. Before we will take a look at the makefile, let's learn some important concepts about Linux build system, which is called "kbuild".
 
-### 关于 kbuild 的几个基本概念
+### A few essential kbuild concepts
 
-* 使用 kbuild 变量可以自定义构建过程。这些变量定义在 `Kconfig` 文件当中。 这个文件中你可以定义变量并给它们赋默认值。这些变量有不同的类型，包括字符串型、布尔型以及整型。在 Kconfig 文件中，你也可以定义变量之间的依赖关系(比如，你可以说，如果变量x被选中，那么变量y将被隐式选中)。 举个例子，你可以去看看 [arm64 Kconfig file](https://github.com/torvalds/linux/tree/v4.14/arch/arm64/Kconfig)。这个文件定义了针对于 `arm64` 体系架构所有的变量。 `Kconfig` 的功能并不是 `make` 工具的标准组成，它只是 Linux 中makefile的一种具体实现。 `Kconfig` 中定义的变量暴露在内核源代码以及嵌套的 makfile 文件中。这内核配置这一步中，变量可以被赋值(比如，如果你键入 `make menuconfig` ，一个图形化的命令行将会出现。这个图形化的命令行可以让你对所有的内核变量自定义赋值，并且将值储存在 `.config` 文件中。使用 `make help` 命令可以查看内核配置相关的所有可选项)
+* Build process can be customized by using kbuild variables. Those variables are defined in `Kconfig` files. Here you can define the variables themselves and their default values. Variables can have different types, including string, boolean and integer. In a Kconfig file you can also define dependencies between variables (for example, you can say that if variable X is selected then variable Y will be selected implicitly). As an example, you can take a look at [arm64 Kconfig file](https://github.com/torvalds/linux/tree/v4.14/arch/arm64/Kconfig). This file defines all variables, specific for `arm64` architecture. `Kconfig` functionality is not part of the standard `make` and is implemented in the Linux makefile. Variables, defined in `Kconfig` are exposed to the kernel source code as well as to the nested makefiles. Variable values can be set during kernel configuration step (for example, if you type `make menuconfig` a console GUI will be shown. It allows you to customize values for all kernel variables and stores the values in `.config`. Use `make help` command to view all possible options to configure the kernel)
 
-* Linux 使用递归构建。也就是说每一个 Linux 内核的子文件夹可以定义它们自己的 `Makefile` 和 `Kconfig`。大部分嵌套的 Makefile 文件都非常简单，仅仅是定义了需要被编译的目标对象文件。通常，这些定义的格式如下：
+* Linux uses recursive build. This means that each subfolder of the Linux kernel can define it's own `Makefile` and `Kconfig`. Most of the nested Makefiles are very simple and just define what object files need to be compiled. Usually, such definitions have the following format.
 
   ```
   obj-$(SOME_CONFIG_VARIABLE) += some_file.o
   ```
 
-  这个定义表明 `some_file.c` 文件只在 `SOME_CONFIG_VARIABLE` 变量被设置的时候才会被编译并且链接到内核中。如果你需要无条件的编译和链接一个文件，你需要把上面的定义改成如下所示的样子。
+  This definition means that `some_file.c` will be compiled and linked to the kernel only if `SOME_CONFIG_VARIABLE` is set. If you want to compile and link a file unconditionally, you need to change the previous definition to look like this.
 
   ```
   obj-y += some_file.o
   ```
 
-  在 [这里](https://github.com/torvalds/linux/tree/v4.14/kernel/Makefile) 可以找到嵌套 makefile 的示例。
+  An example of the nested Makefile can be found [here](https://github.com/torvalds/linux/tree/v4.14/kernel/Makefile)
 
-* 在进行下一步研究之前，你需要了解一下基本的 make 编写规则和结构，并且熟悉相关术语。通用规则和结构如下图所示。 
+* Before we move forward, you need to understand the structure of a basic make rule and be comfortable with make terminology. Common rule structure is illustrated in the following diagram. 
 
   ```
   targets : prerequisites
           recipe
           …
   ```
-    * `targets` 是一些使用空格分割的文件名。目标文件是由构建规则执行后所产生的。通常，一条规则只有一个目标文件。
-    * `prerequisites` 是依赖文件列表， `make` 通过跟踪这个文件列表来确定是否需要重新生成目标文件。
-    * `recipe` 是一个命令行命令。当依赖文件列表有变化时，Make 就会调用这个命令行命令。这个命令负责生成目标文件。
-    * targets 和 prerequisites 都可以使用通配符(`%`)。在脚本中使用通配符时，脚本会分别将每个匹配上的依赖文件执行一遍。在这个示例中，你可以使用 `$<` 和 `$@` 两个变量来引用依赖文件列表和目标文件。我们在 [RPi OS makefile](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile#L14)中早就用到了这个特性。关于 make 规则的更多信息，请参阅 [官方文档](https://www.gnu.org/software/make/manual/html_node/Rule-Syntax.html#Rule-Syntax)
+    * `targets` are file names, separated by spaces. Targets are generated after the rule is executed. Usually, there is only one target per rule.
+    * `prerequisites` are files that `make` trackes to see whether it needs to update the targets.
+    * `recipe` is a bash script. Make calls it when some of the prerequisites have been updated. The recipe is responsible for generating the targets.
+    * Both targets and prerequisites can include wildcards (`%`) When wildcards are used the recipe is executed for each of the mached prerequisites separately. In this case, you can use `$<` and `$@` variables to refer to the prerequisite and the target inside the recipe. We already did it in the [RPi OS makefile](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile#L14)
+  For additional information about make rules, please refer to the [official documentation](https://www.gnu.org/software/make/manual/html_node/Rule-Syntax.html#Rule-Syntax)
 
-* `make` 非常善于侦测是否有依赖文件发生了更改，以及在需要的时候重新编译生成目标文件。但是，如果命令是动态更新的， `make` 就没办法检测到这些改变。 怎么会这样子呢?非常简单。 一个很好的例子就是当你改变一些配置变量时，就会导致命令中增加一个附加选项。默认情况下，这时候 `make` 不会重新编译生成目标文件，因为依赖文件没有发生变化，仅仅是命令更新。为了应付这种情况，Linux 引入了 [if_changed](https://github.com/torvalds/linux/blob/v4.14/scripts/Kbuild.include#L264) 的方法。想了解它的工作原理，请看下面这个示例。
+* `make` is very good in detecting whether any of the prerequisites have been changed and updating only targets that need to be rebuilt. However, if a recipe is dynamically updated, `make` is unable to detect this change. How can this happen? Very easily. One good example is when you change some configuration variable, which results in appending an additional option to the recipe. By default, in this case, `make` will not recompile previously generated object files, because their prerequisites haven't been changed, only the recipe have been updated. To overcome this behavior Linux introduces [if_changed](https://github.com/torvalds/linux/blob/v4.14/scripts/Kbuild.include#L264) function. To see how it works let's consider the following example.
 
   ```
   cmd_compile = gcc $(flags) -o $@ $<
@@ -41,22 +42,22 @@
       $(call if_changed,compile)
   ```
 
-  在这里我们通过调用带有 `compile` 实参的 `if_changed` 函数使每一个 `.c` 文件都生成对应的 `.o` 文件。 `if_changed` 函数寻找 `cmd_compile` 这个变量 (这个函数给它的首个参数添加了 `cmd_` 前缀)，并且检查这个变量值在上一次执行之后是否有更新，以及其他依赖是否发生了变化。如果有更新或者是变化 - `cmd_compile` 这条命令将被执行，重新生成目标文件。我们的示例规则中包含了2个依赖： `.c` 源文件和 `FORCE`。 `FORCE` 是一个特殊的依赖，它会在每一次 `make` 命令被调用的时候强制调用命令行命令。如果没有 `FORCE` 这个依赖，那么命令行命令只会在 `.c` 文件发生了变化的时候才被调用。你可以在 [这里](https://www.gnu.org/software/make/manual/html_node/Force-Targets.html)  阅读更多关于 `FORCE` 依赖的信息。  
+  Here for each `.c` file we build corresponding `.o` file by calling `if_changed` function with the argument `compile`. `if_changed` then looks for `cmd_compile` variable (it adds `cmd_` prefix to the first argument) and checks whether this variable has been updated since the last execution, or any of the prerequisites has been changed. If yes - `cmd_compile` command is executed and object file is regenerated. Our sample rule has 2 prerequisites: source `.c` file and `FORCE`. `FORCE` is a special prerequisite that forces the recipe to be called each time when `make` command is called. Without it, the recipe would be called only if `.c` file was changed. You can read more about `FORCE` target [here](https://www.gnu.org/software/make/manual/html_node/Force-Targets.html) 
 
-### 构建内核
+### Building the kernel
 
-现在，我们已经学完了关于 Linux 构建系统的一些重要的概念，让我们来试着弄清楚当你键入 `make` 命令后到底发生了什么事。这个过程非常复杂，包含了非常多的细节，不过我们这其中很多细节我们都将跳过。我们的目标就是要弄清楚下面两个问题。
+Now, when we learned some important concepts about the Linux build system, let's try to figure out what exactly is going on after you type `make` command. This process is very complicated and includes a lot of details, most of which we will skip. Our goal will be to answer 2 questions.
 
-1. 源文件究竟是怎么编译成目标文件的?
-1. 目标文件是怎么被链接到操作系统镜像文件中的?
+1. How exactly are source files compiled into object files?
+1. How are object files linked into the OS image?
 
-我们首先来解决第二个问题。
+We are going to tackle the second question first.
 
-#### 链接阶段 
+#### Link stage 
 
-* 就像你应该在 `make help` 命令输出中看到过的那样，默认的目标，是用来构建内核的，这个默认目标被称为 `vmlinux`
+* As you might see from the output of `make help` command, the default target, which is responsible for building the kernel, is called `vmlinux`
 
-* `vmlinux` 目标的定义可以在 [这里](https://github.com/torvalds/linux/blob/v4.14/Makefile#L1004) 找到，看起来像是下面这样子的：
+* `vmlinux` target definition can be found [here](https://github.com/torvalds/linux/blob/v4.14/Makefile#L1004) and it looks like this.
 
   ```
   cmd_link-vmlinux =                                                 \
@@ -67,11 +68,11 @@
       +$(call if_changed,link-vmlinux)
   ```
 
-  这个目标使用了我们熟悉的 `if_changed` 函数。无论什么依赖发生了更新， `cmd_link-vmlinux` 这条命令都将被执行。这条命令会执行 [scripts/link-vmlinux.sh](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh) 这个脚本(注意，在 `cmd_link-vmlinux` 命令中自动变量 [$<](https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html) 的用法)。 它同时还执行了特定架构下的 [postlink script](https://github.com/torvalds/linux/blob/v4.14/Documentation/kbuild/makefiles.txt#L1229) 这个脚本，但我们并不关系这个脚本。
+  This target uses already familiar to us `if_changed` function. Whenever some of the prerequsities are updated `cmd_link-vmlinux` command is executed. This command executes [scripts/link-vmlinux.sh](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh) script (Note usage of [$<](https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html) automatic variable in the `cmd_link-vmlinux` command). It also executes architecture specific [postlink script](https://github.com/torvalds/linux/blob/v4.14/Documentation/kbuild/makefiles.txt#L1229), but we are not very interested in it.
 
-* 当 [scripts/link-vmlinux.sh](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh) 脚本被执行的时候，它认为所有需要的对象文件都已经构建好，并且这些对象文件的位置(地址/路径)被保存在3个变量中： `KBUILD_VMLINUX_INIT`, `KBUILD_VMLINUX_MAIN`, `KBUILD_VMLINUX_LIBS`。  
+* When [scripts/link-vmlinux.sh](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh) is executed it assumes that all required object files are already built and their locations are stored in 3 variables: `KBUILD_VMLINUX_INIT`, `KBUILD_VMLINUX_MAIN`, `KBUILD_VMLINUX_LIBS`.  
 
-* `link-vmlinux.sh` 首先为所有的对象文件创建 `thin archive` 。 `thin archive` 是一个包含了一系列对象文件以及它们组合符号表的引用。这是在 [archive_builtin](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh#L56) 函数中完成的。为了创建 `thin archive` ，这个函数使用了 [ar](https://sourceware.org/binutils/docs/binutils/ar.html) 工具。 生成好的 `thin archive` 被保存为 `built-in.o` 文件，其文件格式可以被链接其理解识别，所以它可以和任何其他对象文件一样被使用。
+* `link-vmlinux.sh` script first creates `thin archive` from all available object files. `thin archive` is a special object that contains references to a set of object files as well as their combined symbol table. This is done inside [archive_builtin](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh#L56) function. In order to create `thin archive` this function uses [ar](https://sourceware.org/binutils/docs/binutils/ar.html) utility. Generated `thin archive` is stored as `built-in.o` file and has the format that is understandable by the linker, so it can be used as any other normal object file.
 
 * Next [modpost_link](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh#L69) is called. This function calls linker and generates `vmlinux.o` object file. We need this object file to perform [Section mismatch analysis](https://github.com/torvalds/linux/blob/v4.14/lib/Kconfig.debug#L308) This analysis is performed by the [modpost](https://github.com/torvalds/linux/tree/v4.14/scripts/mod) program and is triggered at [this](https://github.com/torvalds/linux/blob/v4.14/scripts/link-vmlinux.sh#L260) line.
 
