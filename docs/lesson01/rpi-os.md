@@ -1,6 +1,6 @@
 ## 1.1: RPi 操作系统介绍， 以及裸板程序 "Hello, world!"
 
-通过写一个小的，纯裸板的 "Hello, World" 应用来开启一场属于我们的操作系统开发之旅。我假定你已经阅读了 [提前声明](../Prerequisites.md) 并且已经按照要求做好了所有的准备。如果没有，请现在开始准备。
+通过写一个小的，纯裸板的 "Hello, World" 应用来开启一场属于我们的操作系统开发之旅。我假定你已经阅读了 [先决条件](../Prerequisites.md) 并且已经按照要求做好了所有的准备。如果没有，请现在开始准备。
 
 在下一步开始之前，我想先建立一个简单的命名约定。在README文件中你可以看到整个教程的划分。 每一节课都由一些我称之为 "章" 的文件组成(现在, 你正在阅读第 一 节课, 第 1.1 章)。 每一章又被分为许多 "节" 。 这种命名约定可以让我引用资料的不同部分。
 
@@ -9,15 +9,15 @@
 ### 项目结构
 
 每一节课的源代码结构相同。你可以在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src/lesson01) 找到本节课程的源代码。 让我们来简单描述一下这个文件夹的主要组成部分：
-1. **Makefile** 我们将使用 [make](http://www.math.tau.ac.il/~danha/courses/software1/make-intro.html) 工具来构建这个内核。通过配置Makefile文件来控制 `make` 的行为，Makefile包含了如何编译和链接源代码的指令。 
-1. **build.sh 和 build.bat** 如果你使用了Docker那么你就需要这些文件。 这样，你就不需要在你笔记本电脑上安装 make 工具和编译工具链了。
+1. **Makefile** 我们将使用 [make](http://www.math.tau.ac.il/~danha/courses/software1/make-intro.html) 工具来构建这个内核。通过配置 Makefile 文件来控制 `make` 的行为，Makefile包含了如何编译和链接源代码的指令。 
+1. **build.sh 和 build.bat** 如果你使用了 Docker 那你就需要这些文件。 这样，你就不需要在你笔记本电脑上安装 make 工具和编译工具链了。
 1. **src** 这个文件夹包含了所有的源代码。
-1. **include** 所有的头文件都凡在这个文件夹中。 
+1. **include** 所有的头文件都放在这个文件夹中。 
 
 ### Makefile
 
-现在让我们来仔细看一下这个工程的 Makefile。 make 工具的最简单的用途是用来自动决定哪些程序片段需要重新编译，并且发出指令去编译他们。如果你不熟悉 make 和Makefile，我推荐你去阅读 [这篇](http://opensourceforu.com/2012/06/gnu-make-in-detail-for-beginners/) 文章。 
-在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile) 可以找到Makefile在第一节课中的使用。全部内容如下所示：
+现在让我们来仔细看一下这个工程的 Makefile。 make 工具最简单的用途是用来自动决定哪些程序片段需要重新编译，并且发出指令去编译他们。如果你不熟悉 make 和 Makefile，我推荐你去阅读 [这篇](http://opensourceforu.com/2012/06/gnu-make-in-detail-for-beginners/) 文章。 
+在 [这里](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile) 可以找到 Makefile 在第一节课中的使用。全部内容如下所示：
 ```
 ARMGNU ?= aarch64-linux-gnu
 
@@ -55,21 +55,21 @@ kernel7.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
 ```
 ARMGNU ?= aarch64-linux-gnu
 ```
-这个Makefile以一个变量的定义开始。 `ARMGNU` 是一个交叉编译器前缀。我们需要一个 [交叉编译器](https://en.wikipedia.org/wiki/Cross_compiler)，因为我们正在一台 `x86` 电脑上编译运行在 `arm64` 架构机器上的源代码。 所以我们不是用 `gcc`，而是使用 `aarch64-linux-gnu-gcc`。 
+这个 Makefile 以一个变量的定义开始。 `ARMGNU` 是一个交叉编译器前缀。我们需要一个 [交叉编译器](https://en.wikipedia.org/wiki/Cross_compiler)，因为我们正在一台 `x86` 电脑上编译运行在 `arm64` 架构机器上的源代码。 所以我们不是用 `gcc`，而是使用 `aarch64-linux-gnu-gcc`。 
 
 ```
 COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
 ASMOPS = -Iinclude 
 ```
 
-`COPS` 和 `ASMOPS` 分别是当编译C和汇编代码时我们传递给编译器的可选项。 对这些可选项的简短解释如下：
+`COPS` 和 `ASMOPS` 分别是当编译C和汇编代码时我们传递给编译器的可选项。 对这些可选项的简单解释如下：
 
 * **-Wall** 显示所有的警告。
-* **-nostdlib** 不使用标准C库。大部分标准C库的调用其实是在与操作系统的交互。 我们正在写一个裸板程序，没有任何底层操作系统，所以标准C库对我们来说是不可用的。
-* **-nostartfiles** 不使用标准启动文件。 启动文件负责初设置初始栈指针，初始化静态数据，并且跳转到主函数入口处。这些所有的工作将由我们自己来完成。
-* **-ffreestanding** 独立环境是这样的一种环境：标准C库可能不存在，程序也不一定非得是由main函数来启动。 `-ffreestanding` 这个可选项指示编译器不要假定标准函数具有他们通常的定义。
+* **-nostdlib** 不使用标准C库。大部分标准C库的调用其实是在与操作系统交互。 我们正在写一个裸板程序，没有任何底层操作系统，所以标准C库对我们来说是不可用的。
+* **-nostartfiles** 不使用标准启动文件。 启动文件负责初设置初始栈指针，初始化静态数据，并且跳转到主函数入口处。所有的这些工作将由我们自己来完成。
+* **-ffreestanding** 独立环境是指标准C库可能不存在的这样一种环境，程序也不一定非得是由 main 函数来启动。 `-ffreestanding` 这个可选项指示编译器不要假定标准函数具有他们通常的定义。
 * **-Iinclude** 指示编译器在 `include` 文件夹下查找头文件。
-* **-mgeneral-regs-only**. 只是用通用寄存器。 ARM 同时还有 [NEON](https://developer.arm.com/technologies/neon) 寄存器。 我们不想让编译器使用 NEON 寄存器，因为这些寄存器将会增加额外的复杂度 (比如，我们在切换上下文的时候需要保存这些寄存器的状态)。
+* **-mgeneral-regs-only**. 只使用通用寄存器。 ARM 同时还有 [NEON](https://developer.arm.com/technologies/neon) 寄存器。 我们不想让编译器使用 NEON 寄存器，因为这些寄存器将会增加额外的复杂度 (比如，我们在切换上下文的时候需要保存这些寄存器的状态)。
 
 ```
 BUILD_DIR = build
@@ -124,7 +124,7 @@ $(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o kernel7.elf  $(OBJ_FILES)
 $(ARMGNU)-objcopy kernel7.elf -O binary kernel7.img
 ```
 
-`kernel7.elf` 是 [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) 格式的(可执行可链接格式)。 可问题是，ELF 文件是被设计成由操作系统执行的文件格式。为了编写一个裸板程序，我们需要从这个 ELF 文件中提取所有的可执行机器代码段和数据段，然后将它们写入 `kernel7.img` 这个镜像中。 
+`kernel7.elf` 是 [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) 格式的(可执行可链接格式)。问题是，ELF 文件是被设计用来由操作系统执行的文件格式。为了编写一个裸板程序，我们需要从这个 ELF 文件中提取所有的可执行机器代码段和数据段，然后将它们写入 `kernel7.img` 这个镜像中。 
 
 ### 链接脚本
 
@@ -144,7 +144,7 @@ SECTIONS
 }
 ``` 
 
-开机之后，树莓派会加载 `kernel7.img` 这个镜像文件到内存中，并且从文件开头的地方开始执行。 这就是为什么 `.text.boot` 段(已编译程序的机器代码)必须放在最前面的原因；我们将把操作系统的启动代码放到这个 段 中。 `.text`， `.rodata`， 和 `.data` 这几个段包含了编译好了的内核指令，只读数据，和已初始化的全局和静态变量 - 并没有关于这些概念的特别补充说明(可以参考《深入理解计算机系统》这本书的第 7 章了解更多信息)。 `.bss` 段包含了未初始化的全局和静态变量。 通过将这些数据放在单独的段中这种方式，使得编译器可以在生成 ELF 二进制文件的时候节省一些空间 –– 只在 ELF 头中存储这些段的大小，而不存储这些段本身。在把镜像文件加载到内存中以后，我们必须将 `.bss` 段中的数据初始化为0；这也是为什么我们需要记录每个段的开始和结束位置(从符号 `bss_begin` 到符号 `bss_end` ) ，以及对齐每个段(字节对齐)，这样每个指令的起始地址都是8的倍数。如果不对齐每个段，那么将很难在 `bss` 段的开始处使用 `str` 指令来进行初始化数据，因为 `str` 指令只能用于8字节对齐的地址。
+启动后，树莓派会加载 `kernel7.img` 这个镜像文件到内存中，并且从文件开头的地方开始执行。 这就是为什么 `.text.boot` 段(已编译程序的机器代码)必须放在最前面的原因；我们将把操作系统的启动代码放到这个 段 中。 `.text`， `.rodata` 和 `.data` 这几个段包含了编译好的内核指令、只读数据，和已初始化的全局和静态变量 - 并没有关于这些概念的特别补充说明(可以参考《深入理解计算机系统》这本书的第 7 章了解更多信息)。 `.bss` 段包含了未初始化的全局和静态变量。 通过将这些数据放在单独的段中这种方式，使得编译器可以在生成 ELF 二进制文件的时候节省一些空间 –– 只在 ELF 头中存储这些段的大小，而不存储这些段本身。在把镜像文件加载到内存中以后，我们必须将 `.bss` 段中的数据初始化为0；这也是为什么我们需要记录每个段的开始和结束位置(从符号 `bss_begin` 到符号 `bss_end` ) ，以及对齐每个段(字节对齐)，这样每个指令的起始地址都是8的倍数。如果不对齐每个段，那么将很难在 `bss` 段的开始处使用 `str` 指令来进行初始化数据，因为 `str` 指令只能用于8字节对齐的地址。
 
 ### 引导内核
 
@@ -198,7 +198,7 @@ master:
     bl     memzero
 ```
 
-在这个函数中，我们通过调用 `memzero` 来清除 `.bss` 段。我们将在后面定义这个函数。在 ARMv8 架构中，按照惯例，通过 x0-x6 这几个寄存器来向被调用函数传递前7个参数。 `memzero` 这个函数只接受两个参数：起始地址 (`bss_begin`)以及需要被清除的段的大小(`bss_end - bss_begin`)。
+在这个函数中，我们通过调用 `memzero` 来清除 `.bss` 段。我们将在后面定义这个函数。在 ARMv8 架构中，按照惯例，可以通过 x0-x6 这几个寄存器来向被调用函数传递前7个参数。 `memzero` 这个函数只接受两个参数：起始地址 (`bss_begin`)以及需要被清除的段的大小(`bss_end - bss_begin`)。
 
 ```
     mov    sp, #LOW_MEMORY

@@ -1,22 +1,22 @@
-## 2.1: 处理器初始化 
+## 2.1: Processor initialization 
 
-这节课，我们准备更深入的学习使用 ARM 处理器。处理器有一些操作系统可以用到的关键功能特性。第一个关键特性就是 "异常级别(Exception levels)"。
+In this lesson, we are going to work more closely with the ARM processor. It has some essential features that can be utilized by the OS. The first such feature is called "Exception levels"
 
-### 异常级别
+### Exception levels
 
-每个支持 ARM.v8 架构的 ARM 处理器都有4种异常级别。你可以把一种异常级别(简称 `EL`)当作是处理器的一种执行模式，在这种执行模式下，只有有限的子操作和一部分寄存器是可用的。最低级别的异常是 0(EL0)。 当处理器工作在这种级别的时候，它基本只能使用通用寄存器(X0 - X30)和栈指针寄存器(SP)。EL0 还允许使用 `STR` 和 `LDR` 指令来向内存中存数据以及从内存中取数据，以及其他少量的用户程序用到的常用指令。
+Each ARM processor that supports ARM.v8 architecture has 4 exception levels. You can think about an exception level (or `EL` for short) as a processor execution mode in which only a subset of all operations and registers is available. The least privileged exception level is level 0. When processor operates at this level, it mostly uses only general purpose registers (X0 - X30) and stack pointer register (SP). EL0 also allows using `STR` and `LDR` commands to load and store data to and from memory and a few other instructions commonly used by a user program.
 
-一个操作系统应该处理好不同的异常级别，因为系统需要利用异常级别来实现进程隔离。一个进程不应该能够获取到其他进程的数据。为了能做到这一点，操作系统总是将用户程序运行在 EL0。运行在这种异常级别下的程序只能使用它自己的虚拟内存，而不能访问可以改变虚拟内存设置的指令。所以，为了确保进程隔离，操作系统需要为每个进程准备单独的虚拟内存映射，并且在将执行权交给用户程序之前将处理器置于 EL0 状态。
+An operating system should deal with exception levels because it needs to implement process isolation. A user process should not be able to access other process's data. To achieve such behavior, an operating system always runs each user process at EL0. Operating at this exception level a process can only use it's own virtual memory and can't access any instructions that change virtual memory settings. So, to ensure process isolation, an OS need to prepare separate virtual memory mapping for each process and put the processor into EL0 before transferring execution to a user process.
 
-操作系统通常工作下 EL1 状态下。运行在这种异常级别下的处理器可以访问能配置虚拟内存设置的寄存器，和其他一些系统寄存器。树莓派 操作系统同样也是工作在 EL1 状态下。
+An operating system itself usually works at EL1. While running at this exception level processor gets access to the registers that allows configuring virtual memory settings as well as to some system registers. Raspberry Pi OS also will be using EL1.
 
-我们不会大量使用 EL2 和 EL3，不过我还是简单的介绍一下，这样你就能明白为什么 EL2 和 EL3是必需的。 
+We are not going to use exceptions levels 2 and 3 a lot, but I just want to briefly describe them so you can get an idea why they are needed. 
 
-EL2 的使用场景是当我们用到 hypervisor(虚拟化技术、多操作系统) 的时候。在这种情况下，宿主操作系统运行在 EL2，而客户端操作系统只能使用 EL1。这可以让宿主操作系统与那些客户端操作系统隔离，就像操作系统与普通用户程序隔离那样。
+EL2 is used in a scenario when we are using a hypervisor. In this case host operating system runs at EL2 and guest operating systems can only use EL 1. This allows host OS to isolate guest OSes in a similar way how OS isolates user processes.
 
-EL3 用于将 ARM 从"安全模式状态(Secure World)" 切换到 "非安全模式状态(Insecure world)"。这种抽象存在可以为运行在两个不同模式状态下的软件提供全硬件层的隔离。安全模式状态下的应用完全没办法访问或者修改非安全模式状态下的另一个应用的信息(包括指令和数据)，这种限制实在硬件层上强制执行的。 
+EL3 is used for transitions from ARM "Secure World" to "Insecure world". This abstraction exist to provide full hardware isolation between the software running in two different "worlds". Application from an "Insecure world" can in no way access or modify information (both instruction and data) that belongs to "Secure world", and this restriction is enforced at the hardware level. 
 
-### 内核调试
+### Debugging the kernel
 
 Next thing that I want to do is to figure out which Exception level we are currently using. But when I tried to do this, I realized that the kernel could only print some constant string on a screen, but what I need is some analog of [printf](https://en.wikipedia.org/wiki/Printf_format_string) function. With `printf` I can easily display values of different registers and variables. Such functionality is essential for the kernel development because you don't have any other debugger support and `printf` becomes the only mean by which you can figure out what is going on inside your program.
 
