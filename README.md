@@ -2,7 +2,7 @@
 
 本项目涵盖一份详细的指南：教你如何从零开始实现一个简单的操作系统(OS)。我把这个操作系统称为 树莓派 操作系统，或简称 RPi 操作系统。 RPi 操作系统的大部分源码基于 [Linux 内核](https://github.com/torvalds/linux)，不过这个操作系统的功能十分有限，且仅支持 [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/)。 
 
-每一节课程教学都遵循如下设计：首先解释 RPi 操作系统实现了哪些内核特性和功能，接着演示该功能在 Linux 内核中是如何工作的。在源代码 [src](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src) 目录下有对应的每节课的文件夹, 里面包含了本次课程结束时 RPi 操作系统的一份源代码快照。这样可以保证由浅入深逐步引入新的专业概念，并且有助于帮助读者清晰的看到 RPi 操作系统是如何演进的。学习这份教学指南不需要额外掌握任何特别的开发技巧。
+每一节课程教学都遵循如下设计：首先解释 RPi 操作系统实现了哪些内核特性和功能，接着演示该功能在 Linux 内核中是如何工作的。在源代码 [src](https://github.com/s-matyukevich/raspberry-pi-os/tree/master/src) 目录下有对应的每节课的文件夹, 里面包含了本次课程结束时 RPi 操作系统的一份源代码快照。这样可以保证由浅入深逐步引入新的专业概念，并且有助于读者清晰的看到 RPi 操作系统是如何演进的。理解这份教学指南不要求掌握任何特别的操作系统开发技术。
 
 关于本项目更多的目的和历史信息, 请参阅 [Introduction](docs/Introduction.md)。目前本项目仍处于开发状态, 如果你有兴趣参与 - 请参阅 [Contribution guide](docs/Contributions.md)。
 
