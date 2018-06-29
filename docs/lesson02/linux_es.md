@@ -1,13 +1,13 @@
-## 2.2: 处理器初始化 (Linux)
+## 2.2: Processor initialization (Linux)
 
-我们在 [stext](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L116) 函数处停止了对 Linux 内核的探索，也就是进入 `arm64` 架构入口点的地方。这一次，我们将更深入一点，找到一些我们在上一节课中已经实现了的相似的代码。 
+We stopped our exploration of the Linux kernel at [stext](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L116) function, which is the entry point of `arm64` architecture. This time we are going to go a little bit deeper and find some similarities with the code that we have already implemented in this and previous lessons. 
 
-你可能会觉得这一章有点无聊，因为这一章主要就是讨论不同的 arm 系统寄存器以及它们在 Linux 内核中是如何被使用的。不过考虑到以下原因，我仍然觉得这些内容是非常重要的：
+You may find this chapter a little bit boring because it mostly discusses different ARM system registers and how they are used in the Linux kernel. But I still consider it very important for the following reasons:
 
-1. 了解硬件为软件提供了哪些接口是十分有必要的。很多情况下，只有当你知道这些接口你才能明白特定的内核的特性是如何实现的，以及软硬件是如何协作来实现这个特性。
-1. 系统寄存器的不同选线通常与启用/禁用不同的硬件特性有关。如果你了解一个 ARM 处理器有哪些不同的系统寄存器，那你就能知道这个处理器支持什么功能了。
+1. It is necessary to understand the interface that the hardware provides to the software. Just by knowing this interface you will be able, in many cases, to deconstruct how a particular kernel feature is implemented and how software and hardware collaborate to implement this feature.
+1. Different options in the system register are usually related to enabling/disabling various hardware features. If you learn what different system registers an ARM processor have you will already have an idea what kind of functionality it supports.
 
-好了，让我们来继续研究 `stext` 函数。
+Ok, now let's resume our investigation of the `stext` function.
 
 ```
 ENTRY(stext)
@@ -28,9 +28,9 @@ ENTRY(stext)
 ENDPROC(stext)
 ``` 
 
-### 保护引导启动参数(preserve_boot_args)
+### preserve_boot_args
 
-[preserve_boot_args](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L136) 函数负责保存由引导启动加载器传递给内核的那些参数。 
+[preserve_boot_args](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L136) function is responsible for saving parameters, passed to the kernel by the bootloader. 
 
 ```
 preserve_boot_args:
@@ -48,17 +48,17 @@ preserve_boot_args:
 ENDPROC(preserve_boot_args)
 ```
 
-根据 [内核引导启动协议(kernel boot protocol)](https://github.com/torvalds/linux/blob/v4.14/Documentation/arm64/booting.txt#L150)，存放在 `x0 - x3`. `x0` 寄存器中传递给内核的参数，包含了 RAM 体系中的设备树(`.dtb`)的物理地址。 `x1 - x3` 被保留供以后使用。这个函数把 `x0 - x3` 寄存器中的内容拷贝到 [boot_args](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/setup.c#L93) 数组，然后使数据缓存中响应的缓存行失效 [invalidate](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/caches/cache-maintenance)。多核理器系统中的缓存维护本身就是一个非常大的课题，现在我们不准备聊这些。那些对这个主题感性的人，我可以推荐你们去读一读 [缓存(Caches)](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/caches) 以及 `ARM 编程指南(ARM Programmer’s Guide)` 中 [多核处理器(Multi-core processors)](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/multi-core-processors) 这一章。
+Accordingly to the [kernel boot protocol](https://github.com/torvalds/linux/blob/v4.14/Documentation/arm64/booting.txt#L150), parameters are passed to the kernel in registers `x0 - x3`. `x0` contains the physical address of device tree blob (`.dtb`) in system RAM. `x1 - x3` are reserved for future usage. What this function is doing is copying the content of `x0 - x3` registers to the [boot_args](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/setup.c#L93) array and then [invalidate](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/caches/cache-maintenance) the corresponding cache line from the data cache. Cache maintenance in a multiprocessor system is a large topic on its own, and we are going to skip it for now. For those who are interested in this subject, I can recommend reading [Caches](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/caches) and [Multi-core processors](https://developer.arm.com/products/architecture/a-profile/docs/den0024/latest/multi-core-processors) chapters of the `ARM Programmer’s Guide`.
 
-### el2 设置(el2_setup)
+### el2_setup
 
-根据 [内核引导启动协议(kernel boot protocol)](https://github.com/torvalds/linux/blob/v4.14/Documentation/arm64/booting.txt#L159)，内核既可以在 EL1 下被启动，也可以在 EL2 下被启动。在第二种情况下，内核可以访问虚拟化扩展，并且充当一个宿主操作系统。如果我们有幸在 EL2 下启动内核，那么 [el2_setup](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L386) 函数将被调用。这个函数负责配置不同的参数，只能在 EL2 下访问，并降级到 EL1。现在我把这个函数分为好几小的部分，然后逐个解释它们。
+Accordingly to the [arm64boot protocol](https://github.com/torvalds/linux/blob/v4.14/Documentation/arm64/booting.txt#L159), the kernel can be booted in either EL1 or EL2. In the second case, the kernel has access to the virtualization extensions and is able to act as a host operating system. If we are lucky enough to be booted in EL2, [el2_setup](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L386) function is called. It is responsible for configuring different parameters, accessible only at EL2, and dropping to EL1. Now I am going to split this function into small parts and explain each piece one by one.
 
 ```
     msr    SPsel, #1            // We want to use SP_EL{1,2}
 ``` 
 
-在 EL1 和 EL2 下都能使用专有栈指针。另一个可选项是重用 EL0 下的栈指针。
+Dedicated stack pointer will be used for both EL1 and EL2. Another option is to reuse stack pointer from EL0.
 
 ```
     mrs    x0, CurrentEL
@@ -66,7 +66,7 @@ ENDPROC(preserve_boot_args)
     b.eq    1f
 ```
 
-只有在当前 EL 为 EL2 的时候才跳转到标签 `1` 这个地方，否则我们不能对 EL2 进行设置，且这个函数也没剩下多少要做的了。
+Only if current EL is EL2 branch to label `1`, otherwise we can't do EL2 setup and not much is left to be done in this function.
 
 ```
     mrs    x0, sctlr_el1
@@ -78,7 +78,7 @@ CPU_LE(    bic    x0, x0, #(3 << 24)    )    // Clear the EE and E0E bits for EL
     ret
 ```
 
-如果是在 EL1 下执行的时候发生的话， `sctlr_el1` register is updated so that CPU works in either `big-endian` of `little-endian` mode depending on the value of [CPU_BIG_ENDIAN](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L612) config setting. Then we just exit from the `el2_setup` function and return [BOOT_CPU_MODE_EL1](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L55) constant. Accordingly to [ARM64 Function Calling Conventions](http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055b/IHI0055B_aapcs64.pdf) return value should be placed in `x0` register (or `w0` in our case. You can think about `w0` register as the first 32 bit of `x0`)
+If it happens that we execute at EL1, `sctlr_el1` register is updated so that CPU works in either `big-endian` of `little-endian` mode depending on the value of [CPU_BIG_ENDIAN](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L612) config setting. Then we just exit from the `el2_setup` function and return [BOOT_CPU_MODE_EL1](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L55) constant. Accordingly to [ARM64 Function Calling Conventions](http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055b/IHI0055B_aapcs64.pdf) return value should be placed in `x0` register (or `w0` in our case. You can think about `w0` register as the first 32 bit of `x0`)
 
 ```
 1:    mrs    x0, sctlr_el2
