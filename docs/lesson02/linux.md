@@ -78,7 +78,7 @@ CPU_LE(    bic    x0, x0, #(3 << 24)    )    // Clear the EE and E0E bits for EL
     ret
 ```
 
-如果是在 EL1 下执行的时候发生的话， `sctlr_el1` register is updated so that CPU works in either `big-endian` of `little-endian` mode depending on the value of [CPU_BIG_ENDIAN](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L612) config setting. Then we just exit from the `el2_setup` function and return [BOOT_CPU_MODE_EL1](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L55) constant. Accordingly to [ARM64 Function Calling Conventions](http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055b/IHI0055B_aapcs64.pdf) return value should be placed in `x0` register (or `w0` in our case. You can think about `w0` register as the first 32 bit of `x0`)
+如果是在 EL1 下执行的时候发生的话， `sctlr_el1` 寄存器被更新，这样 CPU 要么工作在小端模式下，要么工作在大端模式下，这取决于 [CPU_BIG_ENDIAN](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L612) 配置中设置的值。然后我们从 `el2_setup` 函数中退出，并且返回常量 [BOOT_CPU_MODE_EL1](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L55)。根据 [ARM64 函数调用约定](http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055b/IHI0055B_aapcs64.pdf) 返回值应该放在 `x0` 寄存器(或者像我们这种情况放在 `w0` 寄存器中。你可以把 `w0` 寄存器当作 `x0` 寄存器的前32位)
 
 ```
 1:    mrs    x0, sctlr_el2
@@ -87,7 +87,7 @@ CPU_LE(    bic    x0, x0, #(1 << 25)    )    // Clear the EE bit for EL2
     msr    sctlr_el2, x0
 ```
 
-If it appears that we are booted in EL2 we are doing the same kind of setup for EL2 ( note that this time `sctlr_el2` register is used instead of `sctlr_el1`)
+如果我们是在 EL2 下引导启动，我们也会对 EL2 做同样的事(注意，这时候我们是用 `sctlr_el2` 寄存器而不是 `sctlr_el1` 寄存器)
 
 ```
 #ifdef CONFIG_ARM64_VHE
@@ -103,7 +103,7 @@ If it appears that we are booted in EL2 we are doing the same kind of setup for 
 #endif
 ```
 
-If [Virtualization Host Extensions (VHE)](https://developer.arm.com/products/architecture/a-profile/docs/100942/latest/aarch64-virtualization) is enabled via [ARM64_VHE](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L926) config variable and the host machine supports them, `x2` then is updated with non zero value. `x2` will be used to check whether `VHE` is enabled later in the same function.
+如果通过配置 [ARM64_VHE](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/Kconfig#L926) 变量启用了 [Virtualization Host Extensions (VHE)](https://developer.arm.com/products/architecture/a-profile/docs/100942/latest/aarch64-virtualization)，并且主机支持 `VHE`，`x2` 将被更新为非0值。`x2` 将在同样的函数中被用来检查 `VHE` 是否被启用。
 
 ```
     mov    x0, #HCR_RW            // 64-bit EL1
@@ -115,7 +115,7 @@ set_hcr:
     isb
 ```
 
-Here we set `hcr_el2` register. We used the same register to set 64-bit execution mode for EL1 in the RPi OS. This is exactly what is done in the first line of the provided code sample. Also if `x2 != 0`, which means that VHE is available and the kernel is configured to use it, `hcr_el2` is also used to enable VHE.
+这里我们设置了 `hcr_el2` 寄存器。在 RPi 操作系统中我们使用同一个寄存器来为 EL1 设置 64 位扩展模式。这就是上述代码示例中第一行所做的事。同样的，如果 `x2 != 0` 意味着 VHE 是可用的，内核已被配置好使用 VHE，`hcr_el2` 同样也被用于启用 VHE。
 
 ```
     /*
@@ -137,7 +137,7 @@ Here we set `hcr_el2` register. We used the same register to set 64-bit executio
 
 ```
 
-Next piece of code is well explained in the comment above it. I have nothing to add.
+上述代码中的注释就已经做了很好的说明，我没有什么要补充说明的。
 
 ```
 #ifdef CONFIG_ARM_GIC_V3
@@ -160,9 +160,9 @@ Next piece of code is well explained in the comment above it. I have nothing to 
 #endif
 ```
 
-Next code snippet is executed only if GICv3 is available and enabled. GIC stands for Generic Interrupt Controller. v3 version of the GIC specification adds a few features, that are particularly useful in virtualization context. For example, with GICv3 it becomes possible to have LPIs (Locality-specific Peripheral Interrupt). Such interrupts are routed via message bus and their configuration is held in special tables in memory.  
+接下来的代码片段旨在 GICv3 被启用且可用的时候才会被执行。GIC 表示通用中断控制器。 v3 版本的 GIC 规范添加了一些特性，这些特性在虚拟化上下文中特别有用。比如，GICv3使虚拟化上下文拥有LPIs(特殊局部外围设备中断)成为可能，这种中断通过消息总线被路由出去，并且这些中断的配置保存在内存中特殊的表结构中。  
 
-The provided code is responsible for enabling SRE (System Register Interface) This step must be done before we will be able to use `ICC_*_ELn` registers and take advantages of GICv3 features. 
+上述代码用于启用 SRE(系统寄存器接口)，我们必须在使用 `ICC_*_ELn` 寄存器以及利用 GICv3 特性之前完成这一步。 
 
 ```
     /* Populate ID registers. */
@@ -172,7 +172,7 @@ The provided code is responsible for enabling SRE (System Register Interface) Th
     msr    vmpidr_el2, x1
 ```
 
-`midr_el1` and `mpidr_el1` are read-only registers from the Identification registers group. They provide various information about processor manufacturer, processor architecture name, number of cores and some other info. It is possible to change this information for all readers that try to access it from EL1. Here we populate `vpidr_el2` and ` vmpidr_el2` with the values taken from `midr_el1` and `mpidr_el1`, so this information is the same whether you try to access it from EL1 or  higer exception levels.
+`midr_el1` 和 `mpidr_el1` 是标识寄存器组里的只读寄存器，它们提供关于处理器制造商各种各样的信息，比如处理器架构名字，处理器核心数量等等。对尝试在 EL1 下访问这些寄存器的所有访问者来说，寄存器中的信息可能会有变化。这里我们用 `vpidr_el2` 和 ` vmpidr_el2` 来保存来自 `midr_el1` 和 `mpidr_el1` 中的值，这样，这些信息不论我们是在 EL1 还是更高级别的异常下访问它都是相同的。
 
 ```
 #ifdef CONFIG_COMPAT
@@ -180,7 +180,7 @@ The provided code is responsible for enabling SRE (System Register Interface) Th
 #endif
 ```
 
-When the processor is executing in 32-bit execution mode, there is a concept of "coprocessor". The coprocessor can be used to access information, that in 64-bit execution mode is typically accessed via system registers. You can read about what exactly is accessible via coprocessor [in the official documentation](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0311d/I1014521.html). `msr    hstr_el2, xzr` instruction allows using coprocessor from lower exception levels. This makes sense to do only when compatibility mode is enabled (in this mode kernel can run 32-bit user applications on top of 64-bit kernel) 
+当处理器实在32位执行模式下执行，有种叫做 "协处理器" 的说法。协处理器可以用来获取那些在64位模式下通过系统寄存器访问的信息。你可以从 [官方文档](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0311d/I1014521.html) 中获取关于更确切地使用协处理器访问的详细说明。 `msr    hstr_el2, xzr` 指令允许在低级别异常下使用协处理器。只有在启用兼容模式的时候这个指令才有意义(兼容模式下，64位内核可以运行32位用户应用)。 
 
 ```
     /* EL2 debug */
@@ -206,14 +206,14 @@ When the processor is executing in 32-bit execution mode, there is a concept of 
     msr    mdcr_el2, x3            // Configure debug traps
 ```
 
-This piece of code is responsible for configuring `mdcr_el2` (Monitor Debug Configuration Register (EL2)). This register is responsible for setting different debug traps, related to the virtualization extension.  I am going to leave the details of this code block unexplained because debug and tracing are a little bit out of scope for our discussion. If you are interested in details, I can recommend you to read the description of `mdcr_el2` register on page `2810` of the [AArch64-Reference-Manual](https://developer.arm.com/docs/ddi0487/ca/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile).
+这段代码用于配置 `mdcr_el2` (调试配置寄存器监视器(Monitor Debug Configuration Register (EL2)))。这个寄存器用于设置与虚拟化扩展有关的不同调试陷阱。我没打算解释这个代码块的细节，因为调试和追踪有点超出我们的讨论范围了。如果你对这些细节感兴趣，我推荐你去阅读  [AArch64 引用手册](https://developer.arm.com/docs/ddi0487/ca/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile) 第 `2810` 页关于 `mdcr_el2` 寄存器的描述。
 
 ```
     /* Stage-2 translation */
     msr    vttbr_el2, xzr
 ```
 
-When your OS is used as a hypervisor it should provide complete memory isolation for its guest OSes. Stage 2 virtual memory translation is used precisely for this purpose: each guest OS thinks that it owns all system memory, though in reality each memory access is mapped to the physical memory by stage 2 translation. `vttbr_el2`  holds the base address of the translation table for the stage 2 translation.  At this point, stage 2 translation is disabled, and `vttbr_el2` should be set to 0.
+如果你的操作系统用来当作 hypervisor(大概就是虚拟主机管理程序)，那它应该为它的客户端操作系统提供完全隔离的内存。第二阶段的内存转换就是为了这个目的：每一个客户端操作系统都认为自己独占全部系统内存，而事实却是通过第二阶段的内存转换，每份内存都被映射到物理内存。 `vttbr_el2` 持有用于第二季阶段内存转换的转换基地址。此刻，第二阶段内存转换还是被禁用的， `vttbr_el2` 应该被设为0。
 
 ```
     cbz    x2, install_el2_stub
@@ -223,7 +223,7 @@ When your OS is used as a hypervisor it should provide complete memory isolation
     ret
 ```
 
-First `x2` is compared to `0` to check whether VHE is enabled. If yes - jump to `install_el2_stub` label, otherwise record that CPU is booted in EL2 mode and exit from `el2_setup` function.  In the latter case, the processor continues to operate in EL2 mode and EL1 will not be used at all.
+首先 `x2` 寄存器应该与 `0` 比较来检查 VHE 是否被启用。如果是 - 跳转到 `install_el2_stub` 标签处，否则记录 CPU 是在 EL2 下被引导启动并且从 `el2_setup` 函数中退出。接下来的情况，处理器继续在 EL2 模式下操作，并且 EL1 不会再被使用。
 
 ```
 install_el2_stub:
@@ -235,7 +235,7 @@ CPU_LE(    movk    x0, #0x30d0, lsl #16    )    // Clear EE and E0E on LE system
 
 ```
 
-If we reach this point it means that we don't need VHE and are going to switch to EL1 soon, so early EL1 initialization needs to be done here.  The copied code snippet is responsible for `sctlr_el1` (System Control Register) initialization. We already did the same job [here](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson02/src/boot.S#L18) for the RPi OS.
+如果到了这一步，就意味着我们不需要 VHE，并且准备切换到 EL1，所在这里需要完成 EL1 前期的初始化。这一段复制的代码段负责初始化 `sctlr_el1` (系统控制寄存器)。在RPi 操作系统中的 [这里](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson02/src/boot.S#L18) 我们早就做了同样的事情。
 
 ```
     /* Coprocessor traps. */
@@ -243,7 +243,7 @@ If we reach this point it means that we don't need VHE and are going to switch t
     msr    cptr_el2, x0            // Disable copro. traps to EL2
 ```
 
-This code allows EL1 to access `cpacr_el1` register and, as a result, to control access to Trace, Floating-point, and Advanced SIMD functionality.
+这段代码允许在 EL1 下访问 `cpacr_el1` 寄存器，也就是控制对追踪、浮点以及高级 SIMD 功能的访问。
 
 ```
     /* Hypervisor stub */
@@ -251,9 +251,9 @@ This code allows EL1 to access `cpacr_el1` register and, as a result, to control
     msr    vbar_el2, x0
 ```
 
-We don't plan to use EL2 now, though some functionality requires it. We need it, for example, to implement [kexec](https://linux.die.net/man/8/kexec) system call that enables you to load and boot into another kernel from the currently running kernel. 
+我们暂时没打算现在使用 EL2，尽管一些功能需要用到它。我们需要 EL2，比如，在实现 [kexec](https://linux.die.net/man/8/kexec) 系统调用的时候，这个系统调用可以让我们在当前正在运行的内核上加载和引导启动另一个内核。 
 
-[_hyp_stub_vectors](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/hyp-stub.S#L33)  holds the addresses of all exception handlers for EL2. We are going to implement exception handling functionality for EL1 in the next lesson, after we talk about interrupts and exception handling in details.
+[_hyp_stub_vectors](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/hyp-stub.S#L33) 持有 EL2 全部异常处理程序的地址。下节课在讨论完有关中断和异常处理的细节后我们准备实现 EL1 的异常处理功能。
 
 ```
     /* spsr */
@@ -265,25 +265,25 @@ We don't plan to use EL2 now, though some functionality requires it. We need it,
     eret
 ```
 
-Finally, we need to initialize processor state at EL1 and switch exception levels. We already did it for the [RPi OS](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson02/src/boot.S#L27-L33) so I am not going to explain the details of this code. 
+最后，我们需要在 EL1 下初始化处理器状态，并且切换异常级别。我们早在 [RPi 操作系统](https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson02/src/boot.S#L27-L33) 完成了这一步，我准备解释一下这些代码的详细细节。 
 
-The only new thing here is the way how `elr_el2` is initialized. `lr` or Link Register is an alias for `x30`. Whenever you execute `br` (Branch Link) instruction `x30` is automatically populated with the address of the current instruction. This fact is usually used by `ret` instruction, so it knows where exactly to return. In our case, `lr` points [here](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L119) and, because of the way how we initialized  `elr_el2`, this is also the place from which the execution is going to be resumed after switching to EL1.
+这里唯一新的知识就是 `elr_el2` 是如何被初始化的方式。 `lr` 或者链接寄存器是 `x30` 的别名。无论何时当你执行 `br` (分支链接(Branch Link))指令，`x30` 自动填充当前指令的地址。这个特性经常被 `ret` 指令用到，这样 `ret` 指令就知道具体应该返回到哪里。像我们这种情况，`lr` 指向 [这里](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/kernel/head.S#L119)，因为我们初始化 `elr_el2` 的方式，这也是在切换到 EL1 后执行将重新开始的地方。
 
-### Processor initialization at EL1
+### EL1 下的处理器初始化
 
-Now we are back to the `stext` function. Next few lines are not very important for us, but I wand to explain them for the sake of completeness.
+现在我们回到 `stext` 函数。接下来的几行对我们来说不是很重要，不过为了完整性我还是想解释一下它们。
 
 ```
     adrp    x23, __PHYS_OFFSET
     and    x23, x23, MIN_KIMG_ALIGN - 1    // KASLR offset, defaults to 0
 ```
-[KASLR](https://lwn.net/Articles/569635/), or Kernel address space layout randomization, is a technique that allows to place the kernel at a random address in the memory. This is required only for security reasons. For more information, you can read the link above.
+[KASLR](https://lwn.net/Articles/569635/)，或者说内核地址空间布局随机化，是允许内核随机放在内存地址中的一项技术，这是安全因素方面的要求。你可以阅读上面的链接获取更多信息。
 
 ```
     bl    set_cpu_boot_mode_flag
 ```
 
-Here CPU boot mode is saved into [__boot_cpu_mode](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L74) variable. The code that does this is very similar to `preserve_boot_args` function that we explored previously.  
+在这里 CPU 引导启动模式被保存到 [__boot_cpu_mode](https://github.com/torvalds/linux/blob/v4.14/arch/arm64/include/asm/virt.h#L74) 变量中。这行代码与我们前面研究的 `preserve_boot_args` 函数非常相似。  
 
 ```
     bl    __create_page_tables
@@ -291,19 +291,19 @@ Here CPU boot mode is saved into [__boot_cpu_mode](https://github.com/torvalds/l
     b    __primary_switch
 ```
 
-The last 3 functions are very important, but they all are related to virtual memory management, so we are going to postpone their detailed exploration until the lesson 6. For now, I just want to brefely describe there meanings.
-* `__create_page_tables` As its name stands this one is responsible for creating Page Tables.
-* `__cpu_setup` Initialize various processor settings, mostly specific for virtual memory management.
-* `__primary_switch` Enable MMU and jump to [start_kernel](https://github.com/torvalds/linux/blob/v4.14/init/main.c#L509) function, which is architecture independent starting point.
+最后三个函数非常重要，但是它们都与虚拟内存管理相关，所以我们延迟到第六节课之后再来研究这些函数的细节。现在，我只想简短描述一下他们的含义。
+* `__create_page_tables` 就像名字所指的那样，这个函数用于创建一个页表。
+* `__cpu_setup` 初始化各种各样的处理器设置，主要是针对虚拟内存管理。
+* `__primary_switch` 启用 MMU 并且跳转到 [start_kernel](https://github.com/torvalds/linux/blob/v4.14/init/main.c#L509) 函数，这个函数的起始地址是于特定架构相关的。
 
-### Conclusion
+### 结论
 
-In this chapter, we briefly discussed how a processor is initialized when the Linux kernel is booted. In the next lesson, we will continue to closely work with the ARM processor and investigate a vital topic for any OS: interrupt handling.
+这一章中，我们简单讨论了在 Linux 内核被引导启动的时候处理器是如何被初始化的。下一节课我们继续使用 ARM 处理器，并且研究一个对任何操作系统都至关重要的话题：中断处理。
  
-##### Previous Page
+##### 上一页
 
-2.1 [Processor initialization: RPi OS](../../docs/lesson02/rpi-os.md)
+2.1 [处理器初始化：RPi 操作系统](../../docs/lesson02/rpi-os.md)
 
-##### Next Page
+##### 下一页
 
-2.3 [Processor initialization: Exercises](../../docs/lesson02/exercises.md)
+2.3 [处理器初始化：练习](../../docs/lesson02/exercises.md)
